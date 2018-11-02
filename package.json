@@ -1,0 +1,48 @@
+{
+  "name": "pico-framework",
+  "version": "0.0.0",
+  "description": "A framework for building actor-based, people-centric systems. (pico = PersIstent Compute Objects)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Picolab/pico-framework.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Picolab/pico-framework/issues"
+  },
+  "homepage": "https://github.com/Picolab/pico-framework#readme",
+  "author": "Picolab",
+  "license": "MIT",
+  "keywords": [
+    "pico",
+    "actor",
+    "event-driven",
+    "iot",
+    "distributed",
+    "message-passing",
+    "microservice",
+    "human-centric",
+    "krl"
+  ],
+  "files": ["dist"],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "rm -rf dist && tsc",
+    "test": "ava"
+  },
+  "dependencies": {
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.117",
+    "ava": "^1.0.0-rc.1",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.1.5"
+  },
+  "ava": {
+    "compileEnhancements": false,
+    "extensions": ["ts"],
+    "require": ["ts-node/register"]
+  }
+}
