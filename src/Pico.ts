@@ -37,19 +37,19 @@ export class Pico {
 
   constructor(private pf: PicoFramework) {}
 
-  async send(event: PicoEvent): Promise<string> {
+  async send(event: PicoEvent, query?: PicoQuery): Promise<string> {
     const eid = cuid();
     this.txnLog.push({
       id: eid,
       kind: "event",
       event
     });
-    if (event.query) {
-      const eidQ = cuid();
+    if (query) {
+      const eidQ = eid + ".q";
       this.txnLog.push({
         id: eidQ,
         kind: "query",
-        query: event.query
+        query
       });
       setTimeout(() => this.doWork(), 0);
       return this.waitFor(eidQ);

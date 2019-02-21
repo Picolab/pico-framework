@@ -74,19 +74,21 @@ test("hello world", async function(t) {
   );
 
   t.is(
-    await pf.send({
-      eci,
-      domain: "echo",
-      name: "hello",
-      data: { attrs: { name: "Jim" } },
-      time: Date.now(),
-      query: {
+    await pf.send(
+      {
+        eci,
+        domain: "echo",
+        name: "hello",
+        data: { attrs: { name: "Jim" } },
+        time: Date.now()
+      },
+      {
         eci,
         rid: "rid.hello",
         name: "status",
         args: {}
       }
-    }),
+    ),
     "Said hello to Jim with an event."
   );
 });

@@ -25,11 +25,11 @@ export class PicoFramework {
     );
   }
 
-  async send(event: PicoEvent): Promise<string> {
+  async send(event: PicoEvent, query?: PicoQuery): Promise<string> {
     // TODO clean event
     const { pico, channel } = this.lookupChannel(event.eci);
     // TODO policy
-    const eid = await pico.send(event);
+    const eid = await pico.send(event, query);
     // TODO event+query
     return eid;
   }
