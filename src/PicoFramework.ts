@@ -62,6 +62,16 @@ class Pico {
       kind: "event",
       event
     });
+    if (event.query) {
+      const eidQ = cuid();
+      this.txnLog.push({
+        id: eidQ,
+        kind: "query",
+        query: event.query
+      });
+      setTimeout(() => this.doWork(), 0);
+      return this.waitFor(eidQ);
+    }
     setTimeout(() => this.doWork(), 0);
     return eid;
   }

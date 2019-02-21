@@ -53,13 +53,15 @@ test("hello world", async function(t) {
     }),
     undefined
   );
-  await pf.send({
+  const eid = await pf.send({
     eci,
     domain: "echo",
     name: "hello",
     data: { attrs: { name: "Ed" } },
     time: Date.now()
   });
+  t.true(/^c[a-z0-9]+/.test(eid));
+
   t.is(
     await pf.query({
       eci,
@@ -68,5 +70,22 @@ test("hello world", async function(t) {
       args: {}
     }),
     "Said hello to Ed with an event."
+  );
+
+  t.is(
+    await pf.send({
+      eci,
+      domain: "echo",
+      name: "hello",
+      data: { attrs: { name: "Jim" } },
+      time: Date.now(),
+      query: {
+        eci,
+        rid: "rid.hello",
+        name: "status",
+        args: {}
+      }
+    }),
+    "Said hello to Jim with an event."
   );
 });
