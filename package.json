@@ -15,15 +15,20 @@
   "keywords": [
     "pico",
     "actor",
+    "actor-model",
     "event-driven",
+    "event-sourcing",
     "iot",
     "distributed",
     "message-passing",
     "microservice",
+    "microservice-framework",
     "human-centric",
     "krl"
   ],
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -32,17 +37,29 @@
     "test": "ava"
   },
   "dependencies": {
-    "lodash": "^4.17.11"
+    "charwise": "^3.0.1",
+    "cuid": "^2.1.6",
+    "encoding-down": "^6.0.1",
+    "level-json-coerce-null": "^1.0.1",
+    "levelup": "^4.0.0",
+    "lodash": "^4.17.11",
+    "select-when": "^0.1.0"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.117",
-    "ava": "^1.0.0-rc.1",
-    "ts-node": "^7.0.1",
-    "typescript": "^3.1.5"
+    "@types/levelup": "^3.1.0",
+    "@types/lodash": "^4.14.121",
+    "ava": "^1.2.1",
+    "memdown": "^3.0.0",
+    "ts-node": "^8.0.2",
+    "typescript": "^3.3.3"
   },
   "ava": {
     "compileEnhancements": false,
-    "extensions": ["ts"],
-    "require": ["ts-node/register"]
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
   }
 }
