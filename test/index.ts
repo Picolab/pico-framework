@@ -12,17 +12,18 @@ test("hello world", async function(t) {
     init(pf, pico) {
       const state: any = {};
       return {
-        event: function(event) {
+        event(event) {
           if (`${event.domain}:${event.name}` == "echo:hello") {
             state.status = `Said hello to ${
               event.data ? event.data.attrs.name : ""
             } with an event.`;
           }
         },
-        query: function(name, attrs) {
-          if (name === "hello") {
-            return `Hello ${attrs.name}!`;
-          } else if (name === "status") {
+        query: {
+          hello({ name }) {
+            return `Hello ${name}!`;
+          },
+          status() {
             return state.status;
           }
         }
