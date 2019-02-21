@@ -22,7 +22,9 @@ interface PicoQuery {
   args: { [key: string]: any };
 }
 
-interface PicoTxn_base {}
+interface PicoTxn_base {
+  id: string;
+}
 interface PicoTxn_event extends PicoTxn_base {
   kind: "event";
   event: PicoEvent;
@@ -33,25 +35,6 @@ interface PicoTxn_query extends PicoTxn_base {
 }
 type PicoTxn = PicoTxn_event | PicoTxn_query;
 
-class TxnLog {
-  // TODO use flumelog-offset or similar
-  private log: [string, PicoTxn][] = [];
-
-  append(value: PicoTxn): string {
-    const id = cuid();
-    this.log.push([id, value]);
-    return id;
-  }
-
-  next(): PicoTxn | null {
-    const entry = this.log.shift();
-    if (!entry) {
-      return null;
-    }
-    return entry[1];
-  }
-}
-
 class Channel {
   id: string = cuid();
   // TODO policy
@@ -61,7 +44,10 @@ class Channel {
 class Pico {
   id: string = cuid();
   channels: Channel[] = [];
-  private txnLog = new TxnLog();
+
+  // TODO use flumelog-offset or similar
+  private txnLog: PicoTxn[] = [];
+  private txnWaiters: { [id: string]: (data: any) => void } = {};
 
   rulesets: {
     [rid: string]: { version: string; instance: RulesetInstance };
@@ -70,25 +56,25 @@ class Pico {
   constructor(private pf: PicoFramework) {}
 
   async send(event: PicoEvent): Promise<string> {
-    const eid = this.txnLog.append({ kind: "event", event });
-    // TODO wait until pico processes it
-    // TODO return eid right away
-    for (const rid of Object.keys(this.rulesets)) {
-      const rs = this.rulesets[rid];
-      rs.instance.event(event);
-    }
+    const eid = cuid();
+    this.txnLog.push({
+      id: eid,
+      kind: "event",
+      event
+    });
+    setTimeout(() => this.doWork(), 0);
     return eid;
   }
 
   async query(query: PicoQuery): Promise<any> {
-    const eid = this.txnLog.append({ kind: "query", query });
-    // TODO wait until pico processes it
-
-    const rs = this.rulesets[query.rid];
-    if (!rs) {
-      throw new Error(`Pico doesn't have ${query.rid} installed.`);
-    }
-    return rs.instance.query(query.name, query.args);
+    const eid = cuid();
+    this.txnLog.push({
+      id: eid,
+      kind: "query",
+      query
+    });
+    setTimeout(() => this.doWork(), 0);
+    return this.waitFor(eid);
   }
 
   newChannel(): Channel {
@@ -112,6 +98,55 @@ class Pico {
           instance: rs.init(this.pf, this)
         };
       }
+    }
+  }
+
+  waitFor(id: string): Promise<any> {
+    return new Promise(resolve => {
+      this.txnWaiters[id] = resolve;
+    });
+  }
+
+  private isWorking = false;
+  private async doWork() {
+    if (this.isWorking) {
+      return;
+    }
+    this.isWorking = true;
+    let txn;
+    while ((txn = this.txnLog.shift())) {
+      const data = await this.doTxn(txn);
+
+      if (this.txnWaiters[txn.id]) {
+        this.txnWaiters[txn.id](data);
+        delete this.txnWaiters[txn.id];
+      }
+    }
+    // log is empty, so cleanup any dangling waiters
+    for (const id of Object.keys(this.txnWaiters)) {
+      this.txnWaiters[id](null);
+    }
+    this.txnWaiters = {};
+    this.isWorking = false;
+  }
+
+  private async doTxn(txn: PicoTxn): Promise<any> {
+    switch (txn.kind) {
+      case "event":
+        // TODO rule schedule
+        // TODO ability to raise events while processing
+        for (const rid of Object.keys(this.rulesets)) {
+          const rs = this.rulesets[rid];
+          rs.instance.event(txn.event);
+        }
+        return;
+      case "query":
+        const rs = this.rulesets[txn.query.rid];
+        if (!rs) {
+          throw new Error(`Pico doesn't have ${txn.query.rid} installed.`);
+        }
+        const data = await rs.instance.query(txn.query.name, txn.query.args);
+        return data;
     }
   }
 }

@@ -69,6 +69,4 @@ test("hello world", async function(t) {
     }),
     "Said hello to Ed with an event."
   );
-
-  t.is(1, 1);
 });
