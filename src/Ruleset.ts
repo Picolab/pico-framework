@@ -24,6 +24,8 @@ export class RulesetContext {
     // TODO create a new channel
   }
 
+  listChannels() {}
+
   newPico(): void {
     // TODO create a child pico
     // TODO create an admin channel to that pico
