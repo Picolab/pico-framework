@@ -106,12 +106,6 @@ test("modules", async function(t) {
       const state: any = {};
 
       return {
-        provides: {
-          name: configured_name,
-          someFn() {
-            return { name: configured_name, age: state.age };
-          }
-        },
         event(event) {
           if (`${event.domain}:${event.name}` == "lib:setAge") {
             state.age = event.data ? event.data.attrs.age : "";
@@ -121,36 +115,8 @@ test("modules", async function(t) {
     }
   });
 
-  pf.addRuleset({
-    rid: "rid.consumer",
-    version: "0.0.0",
-    dependencies: {
-      "rid.library": {
-        version: "0.0.0",
-        configure: { name: "override" },
-        as: "lib"
-      }
-    },
-    init(conf) {
-      const lib = conf.dependencies["lib"];
-      return {
-        query: {
-          getLibInfo() {
-            return {
-              name: lib.name,
-              someFn: lib.someFn()
-            };
-          }
-        }
-      };
-    }
-  });
-
   const pico = await pf.newPico();
   const eci = pico.newChannel().id;
-
-  let err = await t.throwsAsync(pico.installRuleset("rid.consumer", "0.0.0"));
-  t.is(err + "", "Error: Pico doesn't have rid.library installed.");
 
   await pico.installRuleset("rid.library", "0.0.0");
   await pico.installRuleset("rid.consumer", "0.0.0");

@@ -85,24 +85,10 @@ export class Pico {
           }
           // TODO uninstall this.rulesets[rid]
         }
-        const depInst: { [rid: string]: { [name: string]: any } } = {};
-        if (rs.dependencies) {
-          for (const depRid of Object.keys(rs.dependencies)) {
-            const dep = rs.dependencies[depRid];
-            if (
-              !this.rulesets[depRid] ||
-              this.rulesets[depRid].version !== dep.version
-            ) {
-              throw new Error(`Pico doesn't have ${depRid} installed.`);
-            }
-            depInst[dep.as] = this.rulesets[depRid].instance.provides || {};
-          }
-        }
         this.rulesets[rid] = {
           version,
           instance: rs.init({
-            configure: {}, // TODO
-            dependencies: depInst
+            configure: {} // TODO
           })
         };
       }
