@@ -9,7 +9,7 @@ test("hello world", async function(t) {
   pf.addRuleset({
     rid: "rid.hello",
     version: "0.0.0",
-    init(conf) {
+    init(ctx) {
       const state: any = {};
       return {
         event(event) {
@@ -99,13 +99,12 @@ test("pico can pass configuration to rulesets", async function(t) {
   pf.addRuleset({
     rid: "some.rid",
     version: "0.0.0",
-    init(conf) {
-      const configured_name =
-        (conf.configure && conf.configure.name) || "default name";
+    init(ctx) {
+      const confName = (ctx.config && ctx.config.name) || "default name";
       return {
         query: {
           name() {
-            return configured_name;
+            return confName;
           }
         }
       };

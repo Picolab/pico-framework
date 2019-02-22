@@ -1,13 +1,37 @@
-import { PicoEvent } from "./PicoEvent";
+import { PicoEvent, PicoEventPayload } from "./PicoEvent";
+import { PicoFramework } from ".";
+import { Pico } from "./Pico";
 
 export interface Ruleset {
   rid: string;
   version: string;
-  init(conf: RulesetConf): RulesetInstance;
+  init(conf: RulesetContext): RulesetInstance;
 }
 
-export interface RulesetConf {
-  configure: { [name: string]: any };
+/**
+ * Give rulesets limited access to the framework/pico that it's running in.
+ */
+export class RulesetContext {
+  constructor(
+    private readonly pf: PicoFramework, // hide from the ruleset
+    private readonly pico: Pico, // hide from the ruleset
+    public readonly config: { [name: string]: any }
+  ) {
+    Object.freeze(this.config);
+  }
+
+  newChannel(): void {
+    // TODO create a new channel
+  }
+
+  newPico(): void {
+    // TODO create a child pico
+    // TODO create an admin channel to that pico
+  }
+
+  raiseEvent(domain: string, name: string, data: PicoEventPayload): void {
+    // TODO add an event to the current schedule
+  }
 }
 
 export interface RulesetInstance {
