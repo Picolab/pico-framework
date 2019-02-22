@@ -93,22 +93,19 @@ test("hello world", async function(t) {
   );
 });
 
-test("modules", async function(t) {
+test("pico can pass configuration to rulesets", async function(t) {
   const pf = new PicoFramework(memdown());
 
   pf.addRuleset({
-    rid: "rid.library",
+    rid: "some.rid",
     version: "0.0.0",
     init(conf) {
       const configured_name =
         (conf.configure && conf.configure.name) || "default name";
-
-      const state: any = {};
-
       return {
-        event(event) {
-          if (`${event.domain}:${event.name}` == "lib:setAge") {
-            state.age = event.data ? event.data.attrs.age : "";
+        query: {
+          name() {
+            return configured_name;
           }
         }
       };
@@ -118,22 +115,27 @@ test("modules", async function(t) {
   const pico = await pf.newPico();
   const eci = pico.newChannel().id;
 
-  await pico.installRuleset("rid.library", "0.0.0");
-  await pico.installRuleset("rid.consumer", "0.0.0");
+  await pico.installRuleset("some.rid", "0.0.0");
 
   t.deepEqual(
     await pf.query({
       eci,
-      rid: "rid.consumer",
-      name: "getLibInfo",
+      rid: "some.rid",
+      name: "name",
       args: {}
     }),
-    {
-      name: "default name",
-      someFn: {
-        name: "default name",
-        age: void 0
-      }
-    }
+    "default name"
+  );
+
+  await pico.installRuleset("some.rid", "0.0.0", { name: "Ove" });
+
+  t.deepEqual(
+    await pf.query({
+      eci,
+      rid: "some.rid",
+      name: "name",
+      args: {}
+    }),
+    "Ove"
   );
 });

@@ -75,20 +75,25 @@ export class Pico {
     return chann;
   }
 
-  async installRuleset(rid: string, version: string) {
+  async installRuleset(
+    rid: string,
+    version: string,
+    configure: { [name: string]: any } = {}
+  ) {
     for (const rs of this.pf.rulesets) {
       if (rs.rid === rid && rs.version === version) {
         if (this.rulesets[rid]) {
           if (this.rulesets[rid].version === version) {
             // already have it
-            return;
+            // but we need to init again b/c configure may have changed
+          } else {
+            // old version
           }
-          // TODO uninstall this.rulesets[rid]
         }
         this.rulesets[rid] = {
           version,
           instance: rs.init({
-            configure: {} // TODO
+            configure: configure
           })
         };
       }
