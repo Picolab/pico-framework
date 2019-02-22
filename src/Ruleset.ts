@@ -11,29 +11,39 @@ export interface Ruleset {
 /**
  * Give rulesets limited access to the framework/pico that it's running in.
  */
-export class RulesetContext {
-  constructor(
-    private readonly pf: PicoFramework, // hide from the ruleset
-    private readonly pico: Pico, // hide from the ruleset
-    public readonly config: { [name: string]: any }
-  ) {
-    Object.freeze(this.config);
-  }
+export interface RulesetContext {
+  config: any;
 
-  newChannel(): void {
-    // TODO create a new channel
-  }
+  newChannel(): void;
 
-  listChannels() {}
+  listChannels(): void;
 
-  newPico(): void {
-    // TODO create a child pico
-    // TODO create an admin channel to that pico
-  }
+  newPico(): void;
 
-  raiseEvent(domain: string, name: string, data: PicoEventPayload): void {
-    // TODO add an event to the current schedule
-  }
+  raiseEvent(domain: string, name: string, data: PicoEventPayload): void;
+}
+
+export function createRulesetContext(
+  pf: PicoFramework,
+  pico: Pico,
+  config: any
+): RulesetContext {
+  // not using a class constructor b/c private is not really private
+  return {
+    config,
+    newPico() {
+      // TODO
+    },
+    newChannel() {
+      // TODO
+    },
+    listChannels() {
+      // TODO
+    },
+    raiseEvent() {
+      // TODO
+    }
+  };
 }
 
 export interface RulesetInstance {

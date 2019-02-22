@@ -3,7 +3,11 @@ import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { PicoEvent } from "./PicoEvent";
 import { Channel } from "./Channel";
-import { RulesetInstance, RulesetContext } from "./Ruleset";
+import {
+  RulesetInstance,
+  RulesetContext,
+  createRulesetContext
+} from "./Ruleset";
 
 interface PicoTxn_base {
   id: string;
@@ -92,11 +96,7 @@ export class Pico {
         }
         this.rulesets[rid] = {
           version,
-          instance: rs.init(
-            new RulesetContext(this.pf, this, {
-              config
-            })
-          )
+          instance: rs.init(createRulesetContext(this.pf, this, config))
         };
       }
     }
