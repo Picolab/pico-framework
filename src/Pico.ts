@@ -75,7 +75,7 @@ export class Pico {
     return chann;
   }
 
-  installRuleset(rid: string, version: string) {
+  async installRuleset(rid: string, version: string) {
     for (const rs of this.pf.rulesets) {
       if (rs.rid === rid && rs.version === version) {
         if (this.rulesets[rid]) {
@@ -85,9 +85,25 @@ export class Pico {
           }
           // TODO uninstall this.rulesets[rid]
         }
+        const depInst: { [rid: string]: { [name: string]: any } } = {};
+        if (rs.dependencies) {
+          for (const depRid of Object.keys(rs.dependencies)) {
+            const dep = rs.dependencies[depRid];
+            if (
+              !this.rulesets[depRid] ||
+              this.rulesets[depRid].version !== dep.version
+            ) {
+              throw new Error(`Pico doesn't have ${depRid} installed.`);
+            }
+            depInst[dep.as] = this.rulesets[depRid].instance.provides || {};
+          }
+        }
         this.rulesets[rid] = {
           version,
-          instance: rs.init(this.pf, this)
+          instance: rs.init({
+            configure: {}, // TODO
+            dependencies: depInst
+          })
         };
       }
     }
@@ -128,7 +144,9 @@ export class Pico {
         // TODO ability to raise events while processing
         for (const rid of Object.keys(this.rulesets)) {
           const rs = this.rulesets[rid];
-          await rs.instance.event(txn.event); // single thread
+          if (rs.instance.event) {
+            await rs.instance.event(txn.event); // single thread
+          }
         }
         return;
       case "query":
@@ -136,7 +154,7 @@ export class Pico {
         if (!rs) {
           throw new Error(`Pico doesn't have ${txn.query.rid} installed.`);
         }
-        const qfn = rs.instance.query[txn.query.name];
+        const qfn = rs.instance.query && rs.instance.query[txn.query.name];
         if (!qfn) {
           throw new Error(
             `Ruleset ${txn.query.rid} does not have query function "${
