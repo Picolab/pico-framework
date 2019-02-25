@@ -27,14 +27,14 @@
     "krl"
   ],
   "files": [
-    "dist"
+    "dist/src"
   ],
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
     "prepublish": "npm run build",
     "build": "rm -rf dist && tsc",
-    "test": "ava"
+    "test": "nyc ava"
   },
   "dependencies": {
     "charwise": "^3.0.1",
@@ -50,6 +50,7 @@
     "@types/lodash": "^4.14.121",
     "ava": "^1.2.1",
     "memdown": "^3.0.0",
+    "nyc": "^13.3.0",
     "ts-node": "^8.0.2",
     "typescript": "^3.3.3"
   },
@@ -60,6 +61,15 @@
     ],
     "require": [
       "ts-node/register"
+    ]
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "reporter": [
+      "text",
+      "html"
     ]
   }
 }
