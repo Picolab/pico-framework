@@ -1,5 +1,6 @@
 import * as cuid from "cuid";
 import { isNotStringOrBlank } from "./utils";
+import { PicoEvent } from "./PicoEvent";
 
 export class Channel {
   id: string = cuid();
@@ -21,8 +22,33 @@ export class Channel {
     allow: [],
     deny: []
   };
-
   // TODO a policy that says it's only for the parent (owner) and can perfrom any event / query
+
+  assertEventPolicy(event: PicoEvent) {
+    assertEventPolicy(this.eventPolicy, event);
+  }
+}
+
+export function assertEventPolicy(eventPolicy: EventPolicy, event: PicoEvent) {
+  for (const p of eventPolicy.deny) {
+    if (p.domain === "*" || p.domain === event.domain) {
+      if (p.name === "*" || p.name === event.name) {
+        throw new Error("Denied by channel policy");
+      }
+    }
+  }
+  let isAllowed = false;
+  for (const p of eventPolicy.allow) {
+    if (p.domain === "*" || p.domain === event.domain) {
+      if (p.name === "*" || p.name === event.name) {
+        isAllowed = true;
+        break;
+      }
+    }
+  }
+  if (!isAllowed) {
+    throw new Error("Not allowed by channel policy");
+  }
 }
 
 export interface EventPolicy {
