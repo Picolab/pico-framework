@@ -2,8 +2,8 @@ import { AbstractLevelDOWN } from "abstract-leveldown";
 import { default as level, LevelUp } from "levelup";
 import { Channel } from "./Channel";
 import { Pico } from "./Pico";
-import { PicoEvent } from "./PicoEvent";
-import { PicoQuery } from "./PicoQuery";
+import { PicoEvent, cleanEvent } from "./PicoEvent";
+import { PicoQuery, cleanQuery } from "./PicoQuery";
 import { Ruleset } from "./Ruleset";
 const charwise = require("charwise");
 const encode = require("encoding-down");
@@ -26,7 +26,8 @@ export class PicoFramework {
   }
 
   async send(event: PicoEvent, query?: PicoQuery): Promise<string> {
-    // TODO clean event
+    event = cleanEvent(event);
+    query = query ? cleanQuery(query) : undefined;
     const { pico, channel } = this.lookupChannel(event.eci);
     // TODO policy
     const eid = await pico.send(event, query);
@@ -35,7 +36,7 @@ export class PicoFramework {
   }
 
   async query(query: PicoQuery) {
-    // TODO clean query
+    query = cleanQuery(query);
     const { pico, channel } = this.lookupChannel(query.eci);
     // TODO policy
     const data = await pico.query(query);
