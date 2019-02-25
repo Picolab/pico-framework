@@ -27,7 +27,14 @@ export class PicoFramework {
 
   async send(event: PicoEvent, query?: PicoQuery): Promise<string> {
     event = cleanEvent(event);
-    query = query ? cleanQuery(query) : undefined;
+    if (query) {
+      query = cleanQuery(query);
+      if (query.eci !== event.eci) {
+        throw new Error("Send event+query must use the same channel");
+      }
+    } else {
+      query = undefined; // ensure it's undefined, not just falsey
+    }
     const { pico, channel } = this.lookupChannel(event.eci);
     // TODO policy
     const eid = await pico.send(event, query);
