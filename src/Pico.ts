@@ -73,7 +73,7 @@ export class Pico {
     return this.waitFor(eid);
   }
 
-  newChannel(conf?: ChannelConfig): Channel {
+  async newChannel(conf?: ChannelConfig): Promise<Channel> {
     const chann = new Channel(conf);
     this.channels.push(chann);
     return chann;

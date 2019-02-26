@@ -13,8 +13,9 @@ export class PicoFramework {
   private db: LevelUp;
   // TODO use db instead of in-memory
   private picos: Pico[] = [];
-  private rootPicoID?: string;
   rulesets: Ruleset[] = [];
+  private startupP: Promise<void>;
+  private rootPico?: Pico;
 
   constructor(leveldown: AbstractLevelDOWN) {
     this.db = level(
@@ -23,9 +24,29 @@ export class PicoFramework {
         valueEncoding: safeJsonCodec
       })
     );
+
+    this.startupP = (async () => {
+      if (!this.rootPico) {
+        this.rootPico = new Pico(this);
+        this.picos.push(this.rootPico);
+      }
+    })();
+  }
+
+  start() {
+    return this.startupP;
+  }
+
+  async getRootPico(): Promise<Pico> {
+    await this.start();
+    if (!this.rootPico) {
+      throw new Error("No rootPico");
+    }
+    return this.rootPico;
   }
 
   async send(event: PicoEvent, query?: PicoQuery): Promise<string | any> {
+    await this.start();
     event = cleanEvent(event);
     if (query) {
       query = cleanQuery(query);
@@ -44,24 +65,15 @@ export class PicoFramework {
   }
 
   async query(query: PicoQuery): Promise<any> {
+    await this.start();
     query = cleanQuery(query);
     const { pico, channel } = await this.lookupChannel(query.eci);
     channel.assertQueryPolicy(query);
     return pico.query(query);
   }
 
-  newPico(parentId?: string): Pico {
-    if (parentId) {
-      // TODO
-    }
-    const pico = new Pico(this);
-    this.picos.push(pico);
-    return pico;
-  }
-
-  private async lookupChannel(
-    eci: string
-  ): Promise<{ pico: Pico; channel: Channel }> {
+  async lookupChannel(eci: string): Promise<{ pico: Pico; channel: Channel }> {
+    await this.start();
     for (const pico of this.picos) {
       for (const channel of pico.channels) {
         if (channel.id === eci) {
@@ -72,7 +84,8 @@ export class PicoFramework {
     throw new Error(`ECI not found ${eci}`);
   }
 
-  addRuleset(rs: Ruleset) {
+  async addRuleset(rs: Ruleset) {
+    await this.start();
     this.rulesets.push(rs);
   }
 }

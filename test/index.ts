@@ -7,7 +7,7 @@ const memdown = require("memdown");
 test("hello world", async function(t) {
   const pf = new PicoFramework(memdown());
 
-  pf.addRuleset({
+  await pf.addRuleset({
     rid: "rid.hello",
     version: "0.0.0",
     init(ctx) {
@@ -32,9 +32,9 @@ test("hello world", async function(t) {
     }
   });
 
-  const pico = await pf.newPico();
+  const pico = await pf.getRootPico();
   await pico.installRuleset("rid.hello", "0.0.0");
-  const eci = pico.newChannel().id;
+  const eci = (await pico.newChannel()).id;
 
   t.is(
     await pf.query({
@@ -97,7 +97,7 @@ test("hello world", async function(t) {
 test("pico can pass configuration to rulesets", async function(t) {
   const pf = new PicoFramework(memdown());
 
-  pf.addRuleset({
+  await pf.addRuleset({
     rid: "some.rid",
     version: "0.0.0",
     init(ctx) {
@@ -112,8 +112,8 @@ test("pico can pass configuration to rulesets", async function(t) {
     }
   });
 
-  const pico = await pf.newPico();
-  const eci = pico.newChannel().id;
+  const pico = await pf.getRootPico();
+  const eci = (await pico.newChannel()).id;
 
   await pico.installRuleset("some.rid", "0.0.0");
 
@@ -142,7 +142,7 @@ test("pico can pass configuration to rulesets", async function(t) {
 
 test("check channel policies", async function(t) {
   const pf = new PicoFramework(memdown());
-  pf.addRuleset({
+  await pf.addRuleset({
     rid: "some.rid",
     version: "0.0.0",
     init(ctx) {
@@ -159,12 +159,12 @@ test("check channel policies", async function(t) {
       };
     }
   });
-  const pico = await pf.newPico();
+  const pico = await pf.getRootPico();
   await pico.installRuleset("some.rid", "0.0.0");
-  const eci = pico.newChannel({
+  const eci = (await pico.newChannel({
     eventPolicy: { allow: [{ domain: "*", name: "foo" }], deny: [] },
     queryPolicy: { allow: [{ rid: "*", name: "foo" }], deny: [] }
-  }).id;
+  })).id;
 
   async function doE(domain: string, name: string) {
     try {

@@ -1,6 +1,8 @@
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from ".";
 import { Pico } from "./Pico";
+import { PicoQuery } from "./PicoQuery";
+import { ChannelConfig } from "./Channel";
 
 export interface Ruleset {
   rid: string;
@@ -14,11 +16,12 @@ export interface Ruleset {
 export interface RulesetContext {
   config: any;
 
-  newChannel(): void;
+  send(event: PicoEvent, query?: PicoQuery): Promise<string | any>;
+  query(query: PicoQuery): Promise<any>;
 
-  listChannels(): void;
-
-  newPico(): void;
+  newPico(): Promise<void>;
+  newChannel(conf?: ChannelConfig): Promise<string>;
+  listChannels(): Promise<void>;
 
   raiseEvent(domain: string, name: string, data: PicoEventPayload): void;
 }
@@ -31,15 +34,26 @@ export function createRulesetContext(
   // not using a class constructor b/c private is not really private
   return {
     config,
-    newPico() {
+
+    send(event, query) {
+      return pf.send(event, query);
+    },
+    query(query) {
+      return pf.query(query);
+    },
+
+    async newPico() {
+      // TODO
+      // Parent is the one calling
+    },
+    async newChannel(conf) {
+      const chann = await pico.newChannel(conf);
+      return chann.id;
+    },
+    async listChannels() {
       // TODO
     },
-    newChannel() {
-      // TODO
-    },
-    listChannels() {
-      // TODO
-    },
+
     raiseEvent() {
       // TODO
     }
