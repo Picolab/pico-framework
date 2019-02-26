@@ -3,6 +3,4 @@ node_js:
   - "node" # latest / current
   - "lts/*"
 
-script:
-  - npm test
-  - npm run report-coverage
+after_success: npm run report-coverage

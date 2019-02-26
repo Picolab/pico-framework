@@ -54,8 +54,8 @@ export function createRulesetContext(
       // TODO
     },
 
-    raiseEvent() {
-      // TODO
+    raiseEvent(domain, name, data) {
+      return pico.raiseEvent(domain, name, data);
     }
   };
 }

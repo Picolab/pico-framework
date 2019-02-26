@@ -1,7 +1,7 @@
 import * as cuid from "cuid";
 import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
-import { PicoEvent } from "./PicoEvent";
+import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { Channel, ChannelConfig } from "./Channel";
 import {
   RulesetInstance,
@@ -130,15 +130,31 @@ export class Pico {
     this.isWorking = false;
   }
 
+  private schedule: PicoEvent[] = [];
+
+  raiseEvent(domain: string, name: string, data: PicoEventPayload) {
+    this.schedule.push({
+      eci: "[raise]",
+      domain,
+      name,
+      data,
+      time: Date.now()
+    });
+  }
+
   private async doTxn(txn: PicoTxn): Promise<any> {
     switch (txn.kind) {
       case "event":
-        // TODO rule schedule
-        // TODO ability to raise events while processing
-        for (const rid of Object.keys(this.rulesets)) {
-          const rs = this.rulesets[rid];
-          if (rs.instance.event) {
-            await rs.instance.event(txn.event); // single thread
+        this.schedule = []; // reset schedule every new event
+        this.schedule.push(txn.event);
+        let event: PicoEvent | undefined;
+        while ((event = this.schedule.shift())) {
+          for (const rid of Object.keys(this.rulesets)) {
+            const rs = this.rulesets[rid];
+            if (rs.instance.event) {
+              // must process one event at a time to maintain pico single-threadedness
+              await rs.instance.event(event);
+            }
           }
         }
         return;
