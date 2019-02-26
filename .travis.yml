@@ -2,3 +2,7 @@ language: node_js
 node_js:
   - "node" # latest / current
   - "lts/*"
+
+script:
+  - npm test
+  - npm run report-coverage

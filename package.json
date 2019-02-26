@@ -34,7 +34,8 @@
   "scripts": {
     "prepublish": "npm run build",
     "build": "rm -rf dist && tsc",
-    "test": "nyc ava"
+    "test": "nyc ava",
+    "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   },
   "dependencies": {
     "charwise": "^3.0.1",
@@ -49,6 +50,7 @@
     "@types/levelup": "^3.1.0",
     "@types/lodash": "^4.14.121",
     "ava": "^1.2.1",
+    "codecov": "^3.2.0",
     "memdown": "^3.0.0",
     "nyc": "^13.3.0",
     "ts-node": "^8.0.2",
