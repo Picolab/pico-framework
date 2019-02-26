@@ -3,6 +3,12 @@ import { isNotStringOrBlank } from "./utils";
 import { PicoEvent } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
 
+export interface ChannelConfig {
+  tags?: string[];
+  eventPolicy?: EventPolicy;
+  queryPolicy?: QueryPolicy;
+}
+
 export class Channel {
   id: string = cuid();
 
@@ -16,17 +22,33 @@ export class Channel {
    * pico-framework policies are denormalized i.e. each channel owns their own copy
    */
   eventPolicy: EventPolicy = {
-    allow: [],
+    allow: [{ domain: "*", name: "*" }],
     deny: []
   };
   queryPolicy: QueryPolicy = {
-    allow: [],
+    allow: [{ rid: "*", name: "*" }],
     deny: []
   };
   // TODO a policy that says it's only for the parent (owner) and can perfrom any event / query
 
+  constructor(conf?: ChannelConfig) {
+    if (conf && conf.tags) {
+      this.tags = conf.tags;
+    }
+    if (conf && conf.eventPolicy) {
+      this.eventPolicy = cleanEventPolicy(conf.eventPolicy);
+    }
+    if (conf && conf.queryPolicy) {
+      this.queryPolicy = cleanQueryPolicy(conf.queryPolicy);
+    }
+  }
+
   assertEventPolicy(event: PicoEvent) {
     assertEventPolicy(this.eventPolicy, event);
+  }
+
+  assertQueryPolicy(query: PicoQuery) {
+    assertQueryPolicy(this.queryPolicy, query);
   }
 }
 

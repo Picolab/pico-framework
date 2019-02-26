@@ -25,7 +25,7 @@ export class PicoFramework {
     );
   }
 
-  async send(event: PicoEvent, query?: PicoQuery): Promise<string> {
+  async send(event: PicoEvent, query?: PicoQuery): Promise<string | any> {
     event = cleanEvent(event);
     if (query) {
       query = cleanQuery(query);
@@ -35,19 +35,19 @@ export class PicoFramework {
     } else {
       query = undefined; // ensure it's undefined, not just falsey
     }
-    const { pico, channel } = this.lookupChannel(event.eci);
-    // TODO policy
-    const eid = await pico.send(event, query);
-    // TODO event+query
-    return eid;
+    const { pico, channel } = await this.lookupChannel(event.eci);
+    channel.assertEventPolicy(event);
+    if (query) {
+      channel.assertQueryPolicy(query);
+    }
+    return pico.send(event, query);
   }
 
-  async query(query: PicoQuery) {
+  async query(query: PicoQuery): Promise<any> {
     query = cleanQuery(query);
-    const { pico, channel } = this.lookupChannel(query.eci);
-    // TODO policy
-    const data = await pico.query(query);
-    return data;
+    const { pico, channel } = await this.lookupChannel(query.eci);
+    channel.assertQueryPolicy(query);
+    return pico.query(query);
   }
 
   newPico(parentId?: string): Pico {
@@ -59,7 +59,9 @@ export class PicoFramework {
     return pico;
   }
 
-  private lookupChannel(eci: string): { pico: Pico; channel: Channel } {
+  private async lookupChannel(
+    eci: string
+  ): Promise<{ pico: Pico; channel: Channel }> {
     for (const pico of this.picos) {
       for (const channel of pico.channels) {
         if (channel.id === eci) {

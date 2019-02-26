@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import test from "ava";
 import { PicoFramework } from "../src";
+import { isCuid } from "cuid";
 const memdown = require("memdown");
 
 test("hello world", async function(t) {
@@ -137,4 +138,64 @@ test("pico can pass configuration to rulesets", async function(t) {
     }),
     "Ove"
   );
+});
+
+test("check channel policies", async function(t) {
+  const pf = new PicoFramework(memdown());
+  pf.addRuleset({
+    rid: "some.rid",
+    version: "0.0.0",
+    init(ctx) {
+      return {
+        event(event) {
+          if (event.name !== "foo") {
+            t.fail("should not run this event");
+          }
+        },
+        query: {
+          foo: () => "foo",
+          bar: () => "bar"
+        }
+      };
+    }
+  });
+  const pico = await pf.newPico();
+  await pico.installRuleset("some.rid", "0.0.0");
+  const eci = pico.newChannel({
+    eventPolicy: { allow: [{ domain: "*", name: "foo" }], deny: [] },
+    queryPolicy: { allow: [{ rid: "*", name: "foo" }], deny: [] }
+  }).id;
+
+  async function doE(domain: string, name: string) {
+    try {
+      return await pf.send({
+        eci,
+        domain,
+        name,
+        data: { attrs: {} },
+        time: 0
+      });
+    } catch (e) {
+      return e + "";
+    }
+  }
+
+  t.deepEqual(await doE("one", "bar"), "Error: Not allowed by channel policy");
+  t.true(isCuid(await doE("one", "foo")));
+
+  async function doQ(name: string) {
+    try {
+      return await pf.query({
+        eci,
+        rid: "some.rid",
+        name,
+        args: {}
+      });
+    } catch (e) {
+      return e + "";
+    }
+  }
+
+  t.deepEqual(await doQ("one"), "Error: Not allowed by channel policy");
+  t.deepEqual(await doQ("foo"), "foo");
 });

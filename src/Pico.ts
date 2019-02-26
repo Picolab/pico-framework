@@ -2,7 +2,7 @@ import * as cuid from "cuid";
 import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { PicoEvent } from "./PicoEvent";
-import { Channel } from "./Channel";
+import { Channel, ChannelConfig } from "./Channel";
 import {
   RulesetInstance,
   RulesetContext,
@@ -41,7 +41,7 @@ export class Pico {
 
   constructor(private pf: PicoFramework) {}
 
-  async send(event: PicoEvent, query?: PicoQuery): Promise<string> {
+  async send(event: PicoEvent, query?: PicoQuery): Promise<string | any> {
     const eid = cuid();
     this.txnLog.push({
       id: eid,
@@ -73,8 +73,8 @@ export class Pico {
     return this.waitFor(eid);
   }
 
-  newChannel(): Channel {
-    const chann = new Channel();
+  newChannel(conf?: ChannelConfig): Channel {
+    const chann = new Channel(conf);
     this.channels.push(chann);
     return chann;
   }
