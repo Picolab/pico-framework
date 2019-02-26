@@ -1,6 +1,7 @@
 import * as cuid from "cuid";
 import { isNotStringOrBlank } from "./utils";
 import { PicoEvent } from "./PicoEvent";
+import { PicoQuery } from "./PicoQuery";
 
 export class Channel {
   id: string = cuid();
@@ -41,6 +42,28 @@ export function assertEventPolicy(eventPolicy: EventPolicy, event: PicoEvent) {
   for (const p of eventPolicy.allow) {
     if (p.domain === "*" || p.domain === event.domain) {
       if (p.name === "*" || p.name === event.name) {
+        isAllowed = true;
+        break;
+      }
+    }
+  }
+  if (!isAllowed) {
+    throw new Error("Not allowed by channel policy");
+  }
+}
+
+export function assertQueryPolicy(queryPolicy: QueryPolicy, query: PicoQuery) {
+  for (const p of queryPolicy.deny) {
+    if (p.rid === "*" || p.rid === query.rid) {
+      if (p.name === "*" || p.name === query.name) {
+        throw new Error("Denied by channel policy");
+      }
+    }
+  }
+  let isAllowed = false;
+  for (const p of queryPolicy.allow) {
+    if (p.rid === "*" || p.rid === query.rid) {
+      if (p.name === "*" || p.name === query.name) {
         isAllowed = true;
         break;
       }
