@@ -1,14 +1,10 @@
 import * as cuid from "cuid";
+import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
+import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
-import { PicoEvent, PicoEventPayload } from "./PicoEvent";
-import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
-import {
-  RulesetInstance,
-  RulesetContext,
-  createRulesetContext,
-  RulesetConfig
-} from "./Ruleset";
+import { RulesetConfig, RulesetInstance } from "./Ruleset";
+import { createRulesetContext } from "./RulesetContext";
 
 interface PicoTxn_base {
   id: string;
@@ -122,6 +118,14 @@ export class Pico {
     return child;
   }
 
+  async delPico(eci: string) {
+    const child = this.children.find(c => c.channel.id === eci);
+    if (!child) {
+      throw new Error(`delPico(${eci}) - not found`);
+    }
+    this.children = this.children.filter(c => c.channel.id !== eci);
+  }
+
   toReadOnly(): PicoReadOnly {
     const data: PicoReadOnly = {
       parent: this.parentChannel ? this.parentChannel.id : null,
@@ -143,6 +147,20 @@ export class Pico {
     const chann = new Channel(conf);
     this.channels.push(chann);
     return chann;
+  }
+
+  async putChannel(eci: string, conf: ChannelConfig): Promise<Channel> {
+    const chann = new Channel(conf);
+    this.channels.push(chann);
+    return chann;
+  }
+
+  async delChannel(eci: string): Promise<void> {
+    const chann = this.channels.find(c => c.id === eci);
+    if (!chann) {
+      throw new Error(`delChannel(${eci}) - not found`);
+    }
+    this.channels = this.channels.filter(c => c.id !== eci);
   }
 
   async installRuleset(
