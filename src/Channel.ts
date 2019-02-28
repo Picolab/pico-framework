@@ -1,4 +1,5 @@
 import * as cuid from "cuid";
+import * as _ from "lodash";
 import { isNotStringOrBlank } from "./utils";
 import { PicoEvent } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
@@ -7,6 +8,13 @@ export interface ChannelConfig {
   tags?: string[];
   eventPolicy?: EventPolicy;
   queryPolicy?: QueryPolicy;
+}
+
+export interface ChannelReadOnly {
+  id: string;
+  tags: string[];
+  eventPolicy: EventPolicy;
+  queryPolicy: QueryPolicy;
 }
 
 export class Channel {
@@ -49,6 +57,15 @@ export class Channel {
 
   assertQueryPolicy(query: PicoQuery) {
     assertQueryPolicy(this.queryPolicy, query);
+  }
+
+  toReadOnly(): ChannelReadOnly {
+    return Object.freeze({
+      id: this.id,
+      tags: this.tags.slice(0),
+      eventPolicy: _.cloneDeep(this.eventPolicy),
+      queryPolicy: _.cloneDeep(this.queryPolicy)
+    });
   }
 }
 

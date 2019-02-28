@@ -1,8 +1,8 @@
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from ".";
-import { Pico } from "./Pico";
+import { Pico, PicoReadOnly } from "./Pico";
 import { PicoQuery } from "./PicoQuery";
-import { ChannelConfig } from "./Channel";
+import { ChannelConfig, ChannelReadOnly } from "./Channel";
 
 export interface Ruleset {
   rid: string;
@@ -20,9 +20,9 @@ export interface RulesetContext {
   eventQuery(event: PicoEvent, query: PicoQuery): Promise<any>;
   query(query: PicoQuery): Promise<any>;
 
-  newPico(): Promise<void>;
-  newChannel(conf?: ChannelConfig): Promise<string>;
-  listChannels(): Promise<void>;
+  pico(): PicoReadOnly;
+  newPico(): Promise<PicoReadOnly>;
+  newChannel(conf?: ChannelConfig): Promise<ChannelReadOnly>;
 
   raiseEvent(domain: string, name: string, data: PicoEventPayload): void;
 }
@@ -46,16 +46,16 @@ export function createRulesetContext(
       return pf.query(query);
     },
 
+    pico() {
+      return pico.toReadOnly();
+    },
     async newPico() {
-      // TODO
-      // Parent is the one calling
+      const child = await pico.newPico();
+      return child.toReadOnly();
     },
     async newChannel(conf) {
       const chann = await pico.newChannel(conf);
-      return chann.id;
-    },
-    async listChannels() {
-      // TODO
+      return chann.toReadOnly();
     },
 
     raiseEvent(domain, name, data) {

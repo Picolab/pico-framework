@@ -2,7 +2,7 @@ import * as cuid from "cuid";
 import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
-import { Channel, ChannelConfig } from "./Channel";
+import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
 import {
   RulesetInstance,
   RulesetContext,
@@ -22,9 +22,24 @@ interface PicoTxn_query extends PicoTxn_base {
 }
 type PicoTxn = PicoTxn_event | PicoTxn_query;
 
+export interface PicoRulesetReadOnly {
+  rid: string;
+  version: string;
+  config: any;
+}
+
+export interface PicoReadOnly {
+  parent: string | null;
+  children: string[];
+  channels: ChannelReadOnly[];
+  rulesets: PicoRulesetReadOnly[];
+}
+
 export class Pico {
   id: string = cuid();
+  parentChannel: Channel | null = null;
   channels: Channel[] = [];
+  children: { pico: Pico; channel: Channel }[] = [];
 
   // TODO use flumelog-offset or similar
   private txnLog: PicoTxn[] = [];
@@ -36,6 +51,7 @@ export class Pico {
     [rid: string]: {
       version: string;
       instance: RulesetInstance;
+      config: any;
     };
   } = {};
 
@@ -80,6 +96,33 @@ export class Pico {
     return this.waitFor(eid);
   }
 
+  async newPico() {
+    const child = new Pico(this.pf);
+    child.parentChannel = await this.newChannel();
+    this.children.push({
+      pico: child,
+      channel: await child.newChannel()
+    });
+    return child;
+  }
+
+  toReadOnly(): PicoReadOnly {
+    const data: PicoReadOnly = {
+      parent: this.parentChannel ? this.parentChannel.id : null,
+      children: this.children.map(c => c.channel.id),
+      channels: this.channels.map(c => c.toReadOnly()),
+      rulesets: []
+    };
+    for (const rid of Object.keys(this.rulesets)) {
+      data.rulesets.push({
+        rid,
+        version: this.rulesets[rid].version,
+        config: this.rulesets[rid].config
+      });
+    }
+    return Object.freeze(data);
+  }
+
   async newChannel(conf?: ChannelConfig): Promise<Channel> {
     const chann = new Channel(conf);
     this.channels.push(chann);
@@ -103,7 +146,8 @@ export class Pico {
         }
         this.rulesets[rid] = {
           version,
-          instance: rs.init(createRulesetContext(this.pf, this, config))
+          instance: rs.init(createRulesetContext(this.pf, this, config)),
+          config
         };
       }
     }
