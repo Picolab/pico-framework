@@ -1,10 +1,12 @@
 import * as cuid from "cuid";
+import * as _ from "lodash";
 import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext } from "./RulesetContext";
+import { isNullish } from "./utils";
 
 interface PicoTxn_base {
   id: string;
@@ -59,6 +61,7 @@ export class Pico {
       version: string;
       instance: RulesetInstance;
       config: RulesetConfig;
+      ent: { [name: string]: any };
     };
   } = {};
 
@@ -166,7 +169,9 @@ export class Pico {
   async install(rid: string, version: string, config: RulesetConfig = {}) {
     for (const rs of this.pf.rulesets) {
       if (rs.rid === rid && rs.version === version) {
+        let ent = {};
         if (this.rulesets[rid]) {
+          ent = this.rulesets[rid].ent;
           if (this.rulesets[rid].version === version) {
             // already have it
             // but we need to init again b/c configure may have changed
@@ -176,8 +181,11 @@ export class Pico {
         }
         this.rulesets[rid] = {
           version,
-          instance: rs.init(createRulesetContext(this.pf, this, config)),
-          config
+          instance: rs.init(
+            createRulesetContext(this.pf, this, { rid, version, config })
+          ),
+          config,
+          ent
         };
       }
     }
@@ -185,6 +193,25 @@ export class Pico {
 
   async uninstall(rid: string) {
     delete this.rulesets[rid];
+  }
+
+  private assertRid(rid: string) {
+    if (!this.rulesets[rid]) {
+      throw new Error(`Not installed ${rid}`);
+    }
+  }
+
+  async getEnt(rid: string, name: string) {
+    this.assertRid(rid);
+    return this.rulesets[rid].ent[name];
+  }
+  async putEnt(rid: string, name: string, value: any) {
+    this.assertRid(rid);
+    this.rulesets[rid].ent[name] = value;
+  }
+  async delEnt(rid: string, name: string) {
+    this.assertRid(rid);
+    delete this.rulesets[rid].ent[name];
   }
 
   waitFor(id: string): Promise<any> {

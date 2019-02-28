@@ -101,7 +101,9 @@ test("pico can pass configuration to rulesets", async function(t) {
     rid: "some.rid",
     version: "0.0.0",
     init(ctx) {
-      const confName = (ctx.config && ctx.config.name) || "default name";
+      const confName =
+        (ctx.ruleset && ctx.ruleset.config && ctx.ruleset.config.name) ||
+        "default name";
       return {
         query: {
           name() {

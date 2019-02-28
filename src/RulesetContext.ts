@@ -1,6 +1,6 @@
 import { PicoFramework } from ".";
 import { ChannelConfig, ChannelReadOnly } from "./Channel";
-import { Pico, PicoReadOnly } from "./Pico";
+import { Pico, PicoReadOnly, PicoRulesetReadOnly } from "./Pico";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
 import { RulesetConfig } from "./Ruleset";
@@ -9,7 +9,8 @@ import { RulesetConfig } from "./Ruleset";
  * Give rulesets limited access to the framework/pico that it's running in.
  */
 export interface RulesetContext {
-  config: RulesetConfig;
+  ruleset: PicoRulesetReadOnly;
+
   pico(): PicoReadOnly;
 
   event(event: PicoEvent): Promise<string>;
@@ -26,6 +27,10 @@ export interface RulesetContext {
   install(rid: string, version: string, config: RulesetConfig): Promise<void>;
   uninstall(rid: string): Promise<void>;
 
+  getEnt(name: string): Promise<any>;
+  putEnt(name: string, value: any): Promise<void>;
+  delEnt(name: string): Promise<void>;
+
   raiseEvent(domain: string, name: string, data: PicoEventPayload): void;
 }
 
@@ -34,15 +39,16 @@ export interface RulesetContext {
  *
  * @param pf pointer to the framework
  * @param pico the pico the ruleset is installed on
- * @param config config the ruleset was installed with
+ * @param ruleset info about the installed ruleset
  */
 export function createRulesetContext(
   pf: PicoFramework,
   pico: Pico,
-  config: any
+  ruleset: PicoRulesetReadOnly
 ): RulesetContext {
+  const rid = ruleset.rid;
   return {
-    config,
+    ruleset,
 
     event(event) {
       return pf.event(event);
@@ -85,6 +91,16 @@ export function createRulesetContext(
 
     async uninstall(rid) {
       await pico.uninstall(rid);
+    },
+
+    getEnt(name) {
+      return pico.getEnt(rid, name);
+    },
+    putEnt(name, value) {
+      return pico.putEnt(rid, name, value);
+    },
+    delEnt(name) {
+      return pico.delEnt(rid, name);
     },
 
     raiseEvent(domain, name, data) {
