@@ -10,11 +10,15 @@ export interface Ruleset {
   init(conf: RulesetContext): RulesetInstance;
 }
 
+export interface RulesetConfig {
+  [name: string]: any;
+}
+
 /**
  * Give rulesets limited access to the framework/pico that it's running in.
  */
 export interface RulesetContext {
-  config: any;
+  config: RulesetConfig;
 
   event(event: PicoEvent): Promise<string>;
   eventQuery(event: PicoEvent, query: PicoQuery): Promise<any>;

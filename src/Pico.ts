@@ -6,7 +6,8 @@ import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
 import {
   RulesetInstance,
   RulesetContext,
-  createRulesetContext
+  createRulesetContext,
+  RulesetConfig
 } from "./Ruleset";
 
 interface PicoTxn_base {
@@ -22,17 +23,27 @@ interface PicoTxn_query extends PicoTxn_base {
 }
 type PicoTxn = PicoTxn_event | PicoTxn_query;
 
-export interface PicoRulesetReadOnly {
-  rid: string;
-  version: string;
-  config: any;
-}
-
 export interface PicoReadOnly {
   parent: string | null;
   children: string[];
   channels: ChannelReadOnly[];
   rulesets: PicoRulesetReadOnly[];
+}
+
+export interface PicoRulesetReadOnly {
+  rid: string;
+  version: string;
+  config: RulesetConfig;
+}
+
+export interface NewPicoRuleset {
+  rid: string;
+  version: string;
+  config: RulesetConfig;
+}
+
+export interface NewPicoConfig {
+  rulesets?: NewPicoRuleset[];
 }
 
 export class Pico {
@@ -51,7 +62,7 @@ export class Pico {
     [rid: string]: {
       version: string;
       instance: RulesetInstance;
-      config: any;
+      config: RulesetConfig;
     };
   } = {};
 
@@ -96,13 +107,18 @@ export class Pico {
     return this.waitFor(eid);
   }
 
-  async newPico() {
+  async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf);
     child.parentChannel = await this.newChannel();
     this.children.push({
       pico: child,
       channel: await child.newChannel()
     });
+    if (conf && conf.rulesets) {
+      for (const rs of conf.rulesets) {
+        child.installRuleset(rs.rid, rs.version, rs.config);
+      }
+    }
     return child;
   }
 
@@ -132,7 +148,7 @@ export class Pico {
   async installRuleset(
     rid: string,
     version: string,
-    config: { [name: string]: any } = {}
+    config: RulesetConfig = {}
   ) {
     for (const rs of this.pf.rulesets) {
       if (rs.rid === rid && rs.version === version) {
