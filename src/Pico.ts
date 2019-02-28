@@ -1,4 +1,3 @@
-import * as cuid from "cuid";
 import * as _ from "lodash";
 import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
@@ -61,7 +60,7 @@ export interface NewPicoConfig {
 }
 
 export class Pico {
-  id: string = cuid();
+  id: string;
   parentChannel: Channel | null = null;
   channels: Channel[] = [];
   children: { pico: Pico; channel: Channel }[] = [];
@@ -81,10 +80,12 @@ export class Pico {
     };
   } = {};
 
-  constructor(private pf: PicoFramework) {}
+  constructor(private pf: PicoFramework) {
+    this.id = pf.genID();
+  }
 
   async event(event: PicoEvent): Promise<string> {
-    const eid = cuid();
+    const eid = this.pf.genID();
     this.txnLog.push({
       id: eid,
       kind: "event",
@@ -95,7 +96,7 @@ export class Pico {
   }
 
   async eventQuery(event: PicoEvent, query: PicoQuery): Promise<any> {
-    const eid = cuid();
+    const eid = this.pf.genID();
     this.txnLog.push({
       id: eid,
       kind: "event",
@@ -112,7 +113,7 @@ export class Pico {
   }
 
   async query(query: PicoQuery): Promise<any> {
-    const eid = cuid();
+    const eid = this.pf.genID();
     this.txnLog.push({
       id: eid,
       kind: "query",
@@ -163,7 +164,7 @@ export class Pico {
   }
 
   async newChannel(conf?: ChannelConfig): Promise<Channel> {
-    const chann = new Channel(conf);
+    const chann = new Channel(this.pf.genID(), conf);
     this.channels.push(chann);
     return chann;
   }

@@ -1,7 +1,6 @@
-import * as _ from "lodash";
 import test from "ava";
-import { PicoFramework } from "../src";
 import { isCuid } from "cuid";
+import { PicoFramework } from "../src";
 const memdown = require("memdown");
 
 test("hello world", async function(t) {

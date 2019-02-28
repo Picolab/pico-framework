@@ -1,4 +1,3 @@
-import * as cuid from "cuid";
 import * as _ from "lodash";
 import { isNotStringOrBlank } from "./utils";
 import { PicoEvent } from "./PicoEvent";
@@ -20,7 +19,7 @@ export interface ChannelReadOnly {
 }
 
 export class Channel {
-  id: string = cuid();
+  id: string;
 
   /**
    * A way to categorize channels i.e. bulk update of a group of channels
@@ -46,7 +45,8 @@ export class Channel {
    */
   familyChannelPicoID?: string;
 
-  constructor(conf?: ChannelConfig) {
+  constructor(id: string, conf?: ChannelConfig) {
+    this.id = id;
     if (conf && conf.tags) {
       this.tags = conf.tags;
     }

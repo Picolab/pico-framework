@@ -1,9 +1,10 @@
 import { AbstractLevelDOWN } from "abstract-leveldown";
+import * as cuid from "cuid";
 import { default as level, LevelUp } from "levelup";
 import { Channel } from "./Channel";
 import { Pico } from "./Pico";
-import { PicoEvent, cleanEvent } from "./PicoEvent";
-import { PicoQuery, cleanQuery } from "./PicoQuery";
+import { cleanEvent, PicoEvent } from "./PicoEvent";
+import { cleanQuery, PicoQuery } from "./PicoQuery";
 import { Ruleset } from "./Ruleset";
 const charwise = require("charwise");
 const encode = require("encoding-down");
@@ -16,14 +17,16 @@ export class PicoFramework {
   rulesets: Ruleset[] = [];
   private startupP: Promise<void>;
   private rootPico?: Pico;
+  genID: () => string;
 
-  constructor(leveldown: AbstractLevelDOWN) {
+  constructor(leveldown: AbstractLevelDOWN, genID: () => string = cuid) {
     this.db = level(
       encode(leveldown, {
         keyEncoding: charwise,
         valueEncoding: safeJsonCodec
       })
     );
+    this.genID = genID;
 
     this.startupP = (async () => {
       if (!this.rootPico) {
