@@ -52,7 +52,7 @@ export interface PicoRulesetReadOnly {
 export interface NewPicoRuleset {
   rid: string;
   version: string;
-  config: RulesetConfig;
+  config?: RulesetConfig;
 }
 
 export interface NewPicoConfig {
@@ -68,7 +68,7 @@ export class Pico {
   // TODO use flumelog-offset or similar
   private txnLog: PicoTxn[] = [];
   private txnWaiters: {
-    [id: string]: (data: any) => void;
+    [id: string]: { resolve: (data: any) => void; reject: (err: any) => void };
   } = {};
 
   rulesets: {
@@ -108,8 +108,11 @@ export class Pico {
       kind: "query",
       query
     });
+    const p0 = this.waitFor(eid);
+    const p1 = this.waitFor(eidQ);
     setTimeout(() => this.doWork(), 0);
-    return this.waitFor(eidQ);
+    await p0; // this may throwup
+    return p1;
   }
 
   async query(query: PicoQuery): Promise<any> {
@@ -125,6 +128,7 @@ export class Pico {
 
   async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf);
+    this.pf.picos.push(child);
 
     child.parentChannel = await this.newChannel(
       { tags: ["system", "parent"] },
@@ -139,15 +143,21 @@ export class Pico {
         child.install(rs.rid, rs.version, rs.config);
       }
     }
+
     return child;
   }
 
   async delPico(eci: string) {
     const child = this.children.find(c => c.channel.id === eci);
     if (!child) {
-      throw new Error(`delPico(${eci}) - not found`);
+      throw new Error(`delPico(${eci}) - not found in children ECIs`);
+    }
+    for (const grandChild of child.pico.children) {
+      // recursive delete
+      await child.pico.delPico(grandChild.channel.id);
     }
     this.children = this.children.filter(c => c.channel.id !== eci);
+    this.pf.picos = this.pf.picos.filter(p => p.id !== child.pico.id);
   }
 
   toReadOnly(): PicoReadOnly {
@@ -242,8 +252,8 @@ export class Pico {
   }
 
   waitFor(id: string): Promise<any> {
-    return new Promise(resolve => {
-      this.txnWaiters[id] = resolve;
+    return new Promise((resolve, reject) => {
+      this.txnWaiters[id] = { resolve, reject };
     });
   }
 
@@ -255,15 +265,25 @@ export class Pico {
     this.isWorking = true;
     let txn;
     while ((txn = this.txnLog.shift())) {
-      const data = await this.doTxn(txn);
+      let data;
+      let error;
+      try {
+        data = await this.doTxn(txn);
+      } catch (err) {
+        error = err;
+      }
       if (this.txnWaiters[txn.id]) {
-        this.txnWaiters[txn.id](data);
+        if (error) {
+          this.txnWaiters[txn.id].reject(error);
+        } else {
+          this.txnWaiters[txn.id].resolve(data);
+        }
         delete this.txnWaiters[txn.id];
       }
     }
     // log is empty, so cleanup any dangling waiters
     for (const id of Object.keys(this.txnWaiters)) {
-      this.txnWaiters[id](null);
+      this.txnWaiters[id].resolve(null);
     }
     this.txnWaiters = {};
     this.isWorking = false;

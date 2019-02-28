@@ -13,7 +13,7 @@ const safeJsonCodec = require("level-json-coerce-null");
 export class PicoFramework {
   private db: LevelUp;
   // TODO use db instead of in-memory
-  private picos: Pico[] = [];
+  picos: Pico[] = [];
   rulesets: Ruleset[] = [];
   private startupP: Promise<void>;
   private rootPico?: Pico;
@@ -48,17 +48,21 @@ export class PicoFramework {
     return this.rootPico;
   }
 
-  async event(event: PicoEvent): Promise<string | any> {
+  async event(event: PicoEvent, fromPicoId?: string): Promise<string | any> {
     await this.start();
     event = cleanEvent(event);
 
     const { pico, channel } = await this.lookupChannel(event.eci);
-    channel.assertEventPolicy(event);
+    channel.assertEventPolicy(event, fromPicoId);
 
     return pico.event(event);
   }
 
-  async eventQuery(event: PicoEvent, query: PicoQuery): Promise<any> {
+  async eventQuery(
+    event: PicoEvent,
+    query: PicoQuery,
+    fromPicoId?: string
+  ): Promise<any> {
     await this.start();
     event = cleanEvent(event);
     query = cleanQuery(query);
@@ -67,17 +71,17 @@ export class PicoFramework {
     }
 
     const { pico, channel } = await this.lookupChannel(event.eci);
-    channel.assertEventPolicy(event);
-    channel.assertQueryPolicy(query);
+    channel.assertEventPolicy(event, fromPicoId);
+    channel.assertQueryPolicy(query, fromPicoId);
 
     return pico.eventQuery(event, query);
   }
 
-  async query(query: PicoQuery): Promise<any> {
+  async query(query: PicoQuery, fromPicoId?: string): Promise<any> {
     await this.start();
     query = cleanQuery(query);
     const { pico, channel } = await this.lookupChannel(query.eci);
-    channel.assertQueryPolicy(query);
+    channel.assertQueryPolicy(query, fromPicoId);
     return pico.query(query);
   }
 

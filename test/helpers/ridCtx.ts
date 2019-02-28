@@ -1,5 +1,4 @@
 import { Ruleset } from "../../src/Ruleset";
-import { PicoEvent } from "../../src/PicoEvent";
 
 /**
  * A test ruleset to expose the `ctx` api
@@ -13,6 +12,7 @@ export const ridCtx: Ruleset = {
       async event(event) {
         const attrs = (event.data && event.data.attrs) || {};
         if (event.domain === "ctx") {
+          lastResult = null;
           lastResult = await (ctx as any)[event.name].apply(null, attrs.args);
         }
       },
