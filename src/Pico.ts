@@ -22,9 +22,25 @@ interface PicoTxn_query extends PicoTxn_base {
 type PicoTxn = PicoTxn_event | PicoTxn_query;
 
 export interface PicoReadOnly {
+  /**
+   * The pico's parent ECI
+   * This is null for the root pico.
+   */
   parent: string | null;
+
+  /**
+   * List of ECIs to the pico's children
+   */
   children: string[];
+
+  /**
+   * List of the pico's channels
+   */
   channels: ChannelReadOnly[];
+
+  /**
+   * Rulesets installed on the pico
+   */
   rulesets: PicoRulesetReadOnly[];
 }
 
@@ -153,8 +169,11 @@ export class Pico {
   }
 
   async putChannel(eci: string, conf: ChannelConfig): Promise<Channel> {
-    const chann = new Channel(conf);
-    this.channels.push(chann);
+    const chann = this.channels.find(c => c.id === eci);
+    if (!chann) {
+      throw new Error(`putChannel(${eci} , ...) - not found`);
+    }
+    chann.update(conf);
     return chann;
   }
 

@@ -8,6 +8,8 @@ export interface ChannelConfig {
   tags?: string[];
   eventPolicy?: EventPolicy;
   queryPolicy?: QueryPolicy;
+
+  familyChannelPicoID?: string;
 }
 
 export interface ChannelReadOnly {
@@ -37,26 +39,67 @@ export class Channel {
     allow: [{ rid: "*", name: "*" }],
     deny: []
   };
-  // TODO a policy that says it's only for the parent (owner) and can perfrom any event / query
+
+  /**
+   * This is set by the family member (parent-child relation) who owns this channel.
+   * Only this pico is allowed to send messages through it.
+   */
+  familyChannelPicoID?: string;
 
   constructor(conf?: ChannelConfig) {
     if (conf && conf.tags) {
       this.tags = conf.tags;
     }
-    if (conf && conf.eventPolicy) {
-      this.eventPolicy = cleanEventPolicy(conf.eventPolicy);
-    }
-    if (conf && conf.queryPolicy) {
-      this.queryPolicy = cleanQueryPolicy(conf.queryPolicy);
+    if (conf && conf.familyChannelPicoID) {
+      this.familyChannelPicoID = conf.familyChannelPicoID;
+    } else {
+      // if not a family channel, use policies
+      if (conf && conf.eventPolicy) {
+        this.eventPolicy = cleanEventPolicy(conf.eventPolicy);
+      }
+      if (conf && conf.queryPolicy) {
+        this.queryPolicy = cleanQueryPolicy(conf.queryPolicy);
+      }
     }
   }
 
-  assertEventPolicy(event: PicoEvent) {
+  update(conf: ChannelConfig) {
+    if (this.familyChannelPicoID) {
+      // can't change anything
+      return;
+    }
+    if (conf.tags) {
+      this.tags = conf.tags;
+    }
+    if (conf.eventPolicy) {
+      this.eventPolicy = cleanEventPolicy(conf.eventPolicy);
+    }
+    if (conf.queryPolicy) {
+      this.queryPolicy = cleanQueryPolicy(conf.queryPolicy);
+    }
+    // NOTE: can't change familyChannelPicoID
+  }
+
+  assertEventPolicy(event: PicoEvent, fromPicoID?: string) {
+    this.assertIfFamilyChannel(fromPicoID);
     assertEventPolicy(this.eventPolicy, event);
   }
 
-  assertQueryPolicy(query: PicoQuery) {
+  assertQueryPolicy(query: PicoQuery, fromPicoID?: string) {
+    this.assertIfFamilyChannel(fromPicoID);
     assertQueryPolicy(this.queryPolicy, query);
+  }
+
+  private assertIfFamilyChannel(fromPicoID?: string) {
+    if (this.familyChannelPicoID) {
+      if (this.familyChannelPicoID === fromPicoID) {
+        return; // good to go
+      } else {
+        throw new Error(
+          "This is a family channel and only the owner can use it."
+        );
+      }
+    }
   }
 
   toReadOnly(): ChannelReadOnly {
