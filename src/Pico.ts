@@ -112,7 +112,7 @@ export class Pico {
     });
     if (conf && conf.rulesets) {
       for (const rs of conf.rulesets) {
-        child.installRuleset(rs.rid, rs.version, rs.config);
+        child.install(rs.rid, rs.version, rs.config);
       }
     }
     return child;
@@ -163,11 +163,7 @@ export class Pico {
     this.channels = this.channels.filter(c => c.id !== eci);
   }
 
-  async installRuleset(
-    rid: string,
-    version: string,
-    config: RulesetConfig = {}
-  ) {
+  async install(rid: string, version: string, config: RulesetConfig = {}) {
     for (const rs of this.pf.rulesets) {
       if (rs.rid === rid && rs.version === version) {
         if (this.rulesets[rid]) {
@@ -185,6 +181,10 @@ export class Pico {
         };
       }
     }
+  }
+
+  async uninstall(rid: string) {
+    delete this.rulesets[rid];
   }
 
   waitFor(id: string): Promise<any> {

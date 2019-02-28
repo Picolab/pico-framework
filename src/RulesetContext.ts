@@ -23,6 +23,9 @@ export interface RulesetContext {
   putChannel(eci: string, conf: ChannelConfig): Promise<ChannelReadOnly>;
   delChannel(eci: string): Promise<void>;
 
+  install(rid: string, version: string, config: RulesetConfig): Promise<void>;
+  uninstall(rid: string): Promise<void>;
+
   raiseEvent(domain: string, name: string, data: PicoEventPayload): void;
 }
 
@@ -74,6 +77,14 @@ export function createRulesetContext(
 
     async delChannel(eci) {
       await pico.delChannel(eci);
+    },
+
+    async install(rid, version, config) {
+      await pico.install(rid, version, config);
+    },
+
+    async uninstall(rid) {
+      await pico.uninstall(rid);
     },
 
     raiseEvent(domain, name, data) {

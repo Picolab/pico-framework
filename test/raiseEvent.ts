@@ -33,7 +33,7 @@ test("raiseEvent", async function(t) {
 
   const pico = await pf.getRootPico();
   const eci = (await pico.newChannel()).id;
-  await pico.installRuleset("rid.raise", "0.0.0");
+  await pico.install("rid.raise", "0.0.0");
 
   let history = await pf.query({
     eci,

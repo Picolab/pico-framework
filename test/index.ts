@@ -33,7 +33,7 @@ test("hello world", async function(t) {
   });
 
   const pico = await pf.getRootPico();
-  await pico.installRuleset("rid.hello", "0.0.0");
+  await pico.install("rid.hello", "0.0.0");
   const eci = (await pico.newChannel()).id;
 
   t.is(
@@ -115,7 +115,7 @@ test("pico can pass configuration to rulesets", async function(t) {
   const pico = await pf.getRootPico();
   const eci = (await pico.newChannel()).id;
 
-  await pico.installRuleset("some.rid", "0.0.0");
+  await pico.install("some.rid", "0.0.0");
 
   t.deepEqual(
     await pf.query({
@@ -127,7 +127,7 @@ test("pico can pass configuration to rulesets", async function(t) {
     "default name"
   );
 
-  await pico.installRuleset("some.rid", "0.0.0", { name: "Ove" });
+  await pico.install("some.rid", "0.0.0", { name: "Ove" });
 
   t.deepEqual(
     await pf.query({
@@ -160,7 +160,7 @@ test("check channel policies", async function(t) {
     }
   });
   const pico = await pf.getRootPico();
-  await pico.installRuleset("some.rid", "0.0.0");
+  await pico.install("some.rid", "0.0.0");
   const eci = (await pico.newChannel({
     eventPolicy: { allow: [{ domain: "*", name: "foo" }], deny: [] },
     queryPolicy: { allow: [{ rid: "*", name: "foo" }], deny: [] }
