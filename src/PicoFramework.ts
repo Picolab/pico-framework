@@ -45,23 +45,29 @@ export class PicoFramework {
     return this.rootPico;
   }
 
-  async send(event: PicoEvent, query?: PicoQuery): Promise<string | any> {
+  async event(event: PicoEvent): Promise<string | any> {
     await this.start();
     event = cleanEvent(event);
-    if (query) {
-      query = cleanQuery(query);
-      if (query.eci !== event.eci) {
-        throw new Error("Send event+query must use the same channel");
-      }
-    } else {
-      query = undefined; // ensure it's undefined, not just falsey
-    }
+
     const { pico, channel } = await this.lookupChannel(event.eci);
     channel.assertEventPolicy(event);
-    if (query) {
-      channel.assertQueryPolicy(query);
+
+    return pico.event(event);
+  }
+
+  async eventQuery(event: PicoEvent, query: PicoQuery): Promise<any> {
+    await this.start();
+    event = cleanEvent(event);
+    query = cleanQuery(query);
+    if (query.eci !== event.eci) {
+      throw new Error("Send event+query must use the same channel");
     }
-    return pico.send(event, query);
+
+    const { pico, channel } = await this.lookupChannel(event.eci);
+    channel.assertEventPolicy(event);
+    channel.assertQueryPolicy(query);
+
+    return pico.eventQuery(event, query);
   }
 
   async query(query: PicoQuery): Promise<any> {

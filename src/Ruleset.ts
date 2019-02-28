@@ -16,7 +16,8 @@ export interface Ruleset {
 export interface RulesetContext {
   config: any;
 
-  send(event: PicoEvent, query?: PicoQuery): Promise<string | any>;
+  event(event: PicoEvent): Promise<string>;
+  eventQuery(event: PicoEvent, query: PicoQuery): Promise<any>;
   query(query: PicoQuery): Promise<any>;
 
   newPico(): Promise<void>;
@@ -35,8 +36,11 @@ export function createRulesetContext(
   return {
     config,
 
-    send(event, query) {
-      return pf.send(event, query);
+    event(event) {
+      return pf.event(event);
+    },
+    eventQuery(event, query) {
+      return pf.eventQuery(event, query);
     },
     query(query) {
       return pf.query(query);

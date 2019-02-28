@@ -55,7 +55,7 @@ test("hello world", async function(t) {
     }),
     undefined
   );
-  const eid = await pf.send({
+  const eid = await pf.event({
     eci,
     domain: "echo",
     name: "hello",
@@ -75,7 +75,7 @@ test("hello world", async function(t) {
   );
 
   t.is(
-    await pf.send(
+    await pf.eventQuery(
       {
         eci,
         domain: "echo",
@@ -168,7 +168,7 @@ test("check channel policies", async function(t) {
 
   async function doE(domain: string, name: string) {
     try {
-      return await pf.send({
+      return await pf.event({
         eci,
         domain,
         name,

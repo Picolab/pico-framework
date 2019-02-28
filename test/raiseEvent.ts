@@ -43,7 +43,7 @@ test("raiseEvent", async function(t) {
   });
   t.is(history.join("|"), "");
 
-  history = await pf.send(
+  history = await pf.eventQuery(
     {
       eci,
       domain: "do",
