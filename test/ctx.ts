@@ -1,33 +1,11 @@
 import * as _ from "lodash";
 import test from "ava";
-import { ridCtx } from "./helpers/ridCtx";
-import { testPicoFramework } from "./helpers/testPicoFramework";
+import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
-test("testing the ctx functions", async function(t) {
-  const { pf, eci } = await testPicoFramework([ridCtx]);
+test("ctx.newPico", async function(t) {
+  const { pf, event, query } = await mkCtxTestEnv();
 
-  function ctxEvent(name: string, args: any[] = []) {
-    return pf.eventQuery(
-      {
-        eci,
-        domain: "ctx",
-        name,
-        data: { attrs: { args } },
-        time: Date.now()
-      },
-      {
-        eci,
-        rid: "rid.ctx",
-        name: "_lastResult",
-        args: {}
-      }
-    );
-  }
-  function ctxQuery(name: string, args: any = {}) {
-    return pf.query({ eci, rid: "rid.ctx", name, args });
-  }
-
-  t.deepEqual(await ctxQuery("pico"), {
+  t.deepEqual(await query("pico"), {
     parent: null,
     children: [],
     channels: [
@@ -35,23 +13,58 @@ test("testing the ctx functions", async function(t) {
         id: "id1",
         tags: [],
         eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },
-        queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] }
+        queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] },
+        familyChannelPicoID: null
       }
     ],
     rulesets: [{ rid: "rid.ctx", version: "0.0.0", config: {} }]
   });
 
-  t.deepEqual(await ctxEvent("newPico", []), {
-    parent: "id5",
-    children: [],
+  t.deepEqual(
+    await event("newPico", [
+      {
+        rulesets: {
+          rid: "rid.ctx",
+          version: "0.0.0",
+          config: { key: "password" }
+        }
+      }
+    ]),
+    {
+      parent: "id5",
+      children: [],
+      channels: [
+        {
+          id: "id6",
+          tags: ["system", "child"],
+          eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },
+          queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] },
+          familyChannelPicoID: "id0"
+        }
+      ],
+      rulesets: []
+    }
+  );
+
+  t.deepEqual(await query("pico"), {
+    parent: null,
+    children: ["id6"],
     channels: [
       {
-        id: "id6",
+        id: "id1",
         tags: [],
         eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },
-        queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] }
+        queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] },
+        familyChannelPicoID: null
+      },
+      {
+        id: "id5",
+        tags: ["system", "parent"],
+        eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },
+        queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] },
+        familyChannelPicoID: "id4"
       }
     ],
-    rulesets: []
+    rulesets: [{ rid: "rid.ctx", version: "0.0.0", config: {} }]
   });
 });

@@ -125,10 +125,14 @@ export class Pico {
 
   async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf);
-    child.parentChannel = await this.newChannel();
+
+    child.parentChannel = await this.newChannel(
+      { tags: ["system", "parent"] },
+      child.id
+    );
     this.children.push({
       pico: child,
-      channel: await child.newChannel()
+      channel: await child.newChannel({ tags: ["system", "child"] }, this.id)
     });
     if (conf && conf.rulesets) {
       for (const rs of conf.rulesets) {
@@ -163,8 +167,11 @@ export class Pico {
     return Object.freeze(data);
   }
 
-  async newChannel(conf?: ChannelConfig): Promise<Channel> {
-    const chann = new Channel(this.pf.genID(), conf);
+  async newChannel(
+    conf?: ChannelConfig,
+    familyChannelPicoID?: string
+  ): Promise<Channel> {
+    const chann = new Channel(this.pf.genID(), conf, familyChannelPicoID);
     this.channels.push(chann);
     return chann;
   }

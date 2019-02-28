@@ -7,8 +7,6 @@ export interface ChannelConfig {
   tags?: string[];
   eventPolicy?: EventPolicy;
   queryPolicy?: QueryPolicy;
-
-  familyChannelPicoID?: string;
 }
 
 export interface ChannelReadOnly {
@@ -16,6 +14,7 @@ export interface ChannelReadOnly {
   tags: string[];
   eventPolicy: EventPolicy;
   queryPolicy: QueryPolicy;
+  familyChannelPicoID: string | null;
 }
 
 export class Channel {
@@ -45,13 +44,13 @@ export class Channel {
    */
   familyChannelPicoID?: string;
 
-  constructor(id: string, conf?: ChannelConfig) {
+  constructor(id: string, conf?: ChannelConfig, familyChannelPicoID?: string) {
     this.id = id;
     if (conf && conf.tags) {
       this.tags = conf.tags;
     }
-    if (conf && conf.familyChannelPicoID) {
-      this.familyChannelPicoID = conf.familyChannelPicoID;
+    if (familyChannelPicoID) {
+      this.familyChannelPicoID = familyChannelPicoID;
     } else {
       // if not a family channel, use policies
       if (conf && conf.eventPolicy) {
@@ -107,7 +106,8 @@ export class Channel {
       id: this.id,
       tags: this.tags.slice(0),
       eventPolicy: _.cloneDeep(this.eventPolicy),
-      queryPolicy: _.cloneDeep(this.queryPolicy)
+      queryPolicy: _.cloneDeep(this.queryPolicy),
+      familyChannelPicoID: this.familyChannelPicoID || null
     });
   }
 }
