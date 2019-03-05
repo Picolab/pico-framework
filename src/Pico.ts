@@ -93,6 +93,18 @@ export class Pico {
     return eid;
   }
 
+  async eventWait(event: PicoEvent): Promise<any> {
+    const eid = this.pf.genID();
+    this.txnLog.push({
+      id: eid,
+      kind: "event",
+      event
+    });
+    const p = this.waitFor(eid);
+    setTimeout(() => this.doWork(), 0);
+    return p;
+  }
+
   async eventQuery(event: PicoEvent, query: PicoQuery): Promise<any> {
     const eid = this.pf.genID();
     this.txnLog.push({
@@ -205,7 +217,9 @@ export class Pico {
   }
 
   async install(rid: string, version: string, config: RulesetConfig = {}) {
+    let ridFound = false;
     for (const rs of this.pf.rulesets) {
+      ridFound = ridFound || rs.rid === rid;
       if (rs.rid === rid && rs.version === version) {
         let ent = {};
         if (this.rulesets[rid]) {
@@ -225,8 +239,13 @@ export class Pico {
           config,
           ent
         };
+        return;
       }
     }
+    if (ridFound) {
+      throw new Error(`Ruleset version not found ${rid}@${version}`);
+    }
+    throw new Error(`Ruleset not found ${rid}@${version}`);
   }
 
   async uninstall(rid: string) {

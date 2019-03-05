@@ -58,6 +58,19 @@ export class PicoFramework {
     return pico.event(event);
   }
 
+  async eventWait(
+    event: PicoEvent,
+    fromPicoId?: string
+  ): Promise<string | any> {
+    await this.start();
+    event = cleanEvent(event);
+
+    const { pico, channel } = await this.lookupChannel(event.eci);
+    channel.assertEventPolicy(event, fromPicoId);
+
+    return pico.eventWait(event);
+  }
+
   async eventQuery(
     event: PicoEvent,
     query: PicoQuery,
