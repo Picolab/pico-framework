@@ -11,7 +11,7 @@ export async function testPicoFramework(rootRulesets: Ruleset[]) {
   const pf = new PicoFramework(memdown(), genID);
 
   for (const rs of rootRulesets) {
-    await pf.addRuleset(rs);
+    pf.addRuleset(rs);
   }
 
   const pico = await pf.getRootPico();

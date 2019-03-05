@@ -6,7 +6,7 @@ const memdown = require("memdown");
 test("hello world", async function(t) {
   const pf = new PicoFramework(memdown());
 
-  await pf.addRuleset({
+  pf.addRuleset({
     rid: "rid.hello",
     version: "0.0.0",
     init(ctx) {
@@ -138,7 +138,7 @@ test("hello world", async function(t) {
 test("pico can pass configuration to rulesets", async function(t) {
   const pf = new PicoFramework(memdown());
 
-  await pf.addRuleset({
+  pf.addRuleset({
     rid: "some.rid",
     version: "0.0.0",
     init(ctx) {
@@ -185,7 +185,7 @@ test("pico can pass configuration to rulesets", async function(t) {
 
 test("check channel policies", async function(t) {
   const pf = new PicoFramework(memdown());
-  await pf.addRuleset({
+  pf.addRuleset({
     rid: "some.rid",
     version: "0.0.0",
     init(ctx) {

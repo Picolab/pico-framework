@@ -138,7 +138,7 @@ export class Pico {
 
   async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf);
-    this.pf.picos.push(child);
+    this.pf.db.addPico(child);
 
     child.parentChannel = await this.newChannel(
       { tags: ["system", "parent"] },
@@ -150,7 +150,7 @@ export class Pico {
     });
     if (conf && conf.rulesets) {
       for (const rs of conf.rulesets) {
-        child.install(rs.rid, rs.version, rs.config);
+        await child.install(rs.rid, rs.version, rs.config);
       }
     }
 
@@ -167,7 +167,7 @@ export class Pico {
       await child.pico.delPico(grandChild.channel.id);
     }
     this.children = this.children.filter(c => c.channel.id !== eci);
-    this.pf.picos = this.pf.picos.filter(p => p.id !== child.pico.id);
+    this.pf.db.removePico(child.pico.id);
   }
 
   toReadOnly(): PicoReadOnly {
@@ -217,35 +217,26 @@ export class Pico {
   }
 
   async install(rid: string, version: string, config: RulesetConfig = {}) {
-    let ridFound = false;
-    for (const rs of this.pf.rulesets) {
-      ridFound = ridFound || rs.rid === rid;
-      if (rs.rid === rid && rs.version === version) {
-        let ent = {};
-        if (this.rulesets[rid]) {
-          ent = this.rulesets[rid].ent;
-          if (this.rulesets[rid].version === version) {
-            // already have it
-            // but we need to init again b/c configure may have changed
-          } else {
-            // old version
-          }
-        }
-        this.rulesets[rid] = {
-          version,
-          instance: rs.init(
-            createRulesetContext(this.pf, this, { rid, version, config })
-          ),
-          config,
-          ent
-        };
-        return;
+    const rs = this.pf.getRuleset(rid, version);
+
+    let ent = {};
+    if (this.rulesets[rid]) {
+      ent = this.rulesets[rid].ent;
+      if (this.rulesets[rid].version === version) {
+        // already have it
+        // but we need to init again b/c configure may have changed
+      } else {
+        // old version
       }
     }
-    if (ridFound) {
-      throw new Error(`Ruleset version not found ${rid}@${version}`);
-    }
-    throw new Error(`Ruleset not found ${rid}@${version}`);
+    this.rulesets[rid] = {
+      version,
+      instance: rs.init(
+        createRulesetContext(this.pf, this, { rid, version, config })
+      ),
+      config,
+      ent
+    };
   }
 
   async uninstall(rid: string) {

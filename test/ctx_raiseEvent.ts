@@ -6,7 +6,7 @@ const memdown = require("memdown");
 test("raiseEvent", async function(t) {
   const pf = new PicoFramework(memdown());
 
-  await pf.addRuleset({
+  pf.addRuleset({
     rid: "rid.raise",
     version: "0.0.0",
     init(ctx) {
