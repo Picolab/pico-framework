@@ -74,7 +74,6 @@ export class Pico {
       version: string;
       instance: RulesetInstance;
       config: RulesetConfig;
-      ent: { [name: string]: any };
     };
   } = {};
 
@@ -219,9 +218,7 @@ export class Pico {
   async install(rid: string, version: string, config: RulesetConfig = {}) {
     const rs = this.pf.getRuleset(rid, version);
 
-    let ent = {};
     if (this.rulesets[rid]) {
-      ent = this.rulesets[rid].ent;
       if (this.rulesets[rid].version === version) {
         // already have it
         // but we need to init again b/c configure may have changed
@@ -234,8 +231,7 @@ export class Pico {
       instance: rs.init(
         createRulesetContext(this.pf, this, { rid, version, config })
       ),
-      config,
-      ent
+      config
     };
   }
 
@@ -249,17 +245,17 @@ export class Pico {
     }
   }
 
-  async getEnt(rid: string, name: string) {
+  getEnt(rid: string, name: string) {
     this.assertRid(rid);
-    return this.rulesets[rid].ent[name];
+    return this.pf.db.getEnt(this.id, rid, name);
   }
-  async putEnt(rid: string, name: string, value: any) {
+  putEnt(rid: string, name: string, value: any) {
     this.assertRid(rid);
-    this.rulesets[rid].ent[name] = value;
+    return this.pf.db.putEnt(this.id, rid, name, value);
   }
-  async delEnt(rid: string, name: string) {
+  delEnt(rid: string, name: string) {
     this.assertRid(rid);
-    delete this.rulesets[rid].ent[name];
+    return this.pf.db.delEnt(this.id, rid, name);
   }
 
   waitFor(id: string): Promise<any> {

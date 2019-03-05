@@ -54,6 +54,24 @@ class Persistence {
   allPicoIDs(): string[] {
     return this.picos.map(p => p.id);
   }
+
+  async getEnt(picoId: string, rid: string, name: string) {
+    let data: any;
+    try {
+      data = await this.db.get(["entvar", picoId, rid, name]);
+    } catch (err) {
+      if (err.notFound) {
+        return null;
+      }
+    }
+    return data;
+  }
+  async putEnt(picoId: string, rid: string, name: string, value: any) {
+    await this.db.put(["entvar", picoId, rid, name], value);
+  }
+  async delEnt(picoId: string, rid: string, name: string) {
+    await this.db.del(["entvar", picoId, rid, name]);
+  }
 }
 
 export class PicoFramework {
