@@ -46,12 +46,13 @@ export class Channel {
 
   constructor(id: string, conf?: ChannelConfig, familyChannelPicoID?: string) {
     this.id = id;
-    if (conf && conf.tags) {
-      this.tags = conf.tags;
-    }
     if (familyChannelPicoID) {
+      this.tags = (conf && conf.tags) || [];
       this.familyChannelPicoID = familyChannelPicoID;
     } else {
+      if (conf && conf.tags) {
+        this.tags = cleanTags(conf.tags);
+      }
       // if not a family channel, use policies
       if (conf && conf.eventPolicy) {
         this.eventPolicy = cleanEventPolicy(conf.eventPolicy);
@@ -68,7 +69,7 @@ export class Channel {
       return;
     }
     if (conf.tags) {
-      this.tags = conf.tags;
+      this.tags = cleanTags(conf.tags);
     }
     if (conf.eventPolicy) {
       this.eventPolicy = cleanEventPolicy(conf.eventPolicy);
@@ -184,7 +185,7 @@ export function cleanEventPolicy(orig: any): EventPolicy {
     !Array.isArray(orig.deny)
   ) {
     throw new TypeError(
-      `EventPolicy expectes {allow: EventPolicyRule[], deny: EventPolicyRule[]}`
+      `EventPolicy expects {allow: EventPolicyRule[], deny: EventPolicyRule[]}`
     );
   }
 
@@ -204,7 +205,7 @@ function cleanEventPolicyRule(orig: any): EventPolicyRule {
     isNotStringOrBlank(orig.name)
   ) {
     throw new TypeError(
-      `EventPolicyRule expectes {domain: string, name: string}`
+      `EventPolicyRule expects {domain: string, name: string}`
     );
   }
   return {
@@ -223,7 +224,7 @@ export function cleanQueryPolicy(orig: any): QueryPolicy {
     !Array.isArray(orig.deny)
   ) {
     throw new TypeError(
-      `QueryPolicy expectes {allow: QueryPolicyRule[], deny: QueryPolicyRule[]}`
+      `QueryPolicy expects {allow: QueryPolicyRule[], deny: QueryPolicyRule[]}`
     );
   }
 
@@ -242,10 +243,39 @@ function cleanQueryPolicyRule(orig: any): QueryPolicyRule {
     isNotStringOrBlank(orig.name) ||
     isNotStringOrBlank(orig.rid)
   ) {
-    throw new TypeError(`QueryPolicyRule expectes {rid: string, name: string}`);
+    throw new TypeError(`QueryPolicyRule expects {rid: string, name: string}`);
   }
   return {
     rid: orig.rid.trim(),
     name: orig.name.trim()
   };
+}
+
+function cleanTags(tags: any): string[] {
+  if (!Array.isArray(tags)) {
+    throw new TypeError(
+      "Channel `tags` must be an array of non-empty strings."
+    );
+  }
+  return tags.map(tag => {
+    if (typeof tag !== "string") {
+      throw new TypeError(
+        "Channel `tags` must be an array of non-empty strings."
+      );
+    }
+    tag = tag
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/[^a-z0-9_-]+/gi, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase();
+    if (tag.length === 0) {
+      throw new TypeError("Channel tag cannot be a blank string.");
+    }
+    if (tag === "system") {
+      throw new TypeError('Cannot tag channel as "system".');
+    }
+    return tag;
+  });
 }

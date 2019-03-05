@@ -15,7 +15,7 @@ test("policy = cleanEventPolicy(policy)", function(t) {
   ]) {
     t.throws(
       () => cleanEventPolicy(val),
-      "EventPolicy expectes {allow: EventPolicyRule[], deny: EventPolicyRule[]}"
+      "EventPolicy expects {allow: EventPolicyRule[], deny: EventPolicyRule[]}"
     );
   }
 
@@ -41,11 +41,11 @@ test("policy = cleanEventPolicy(policy)", function(t) {
   ]) {
     t.throws(
       () => cleanEventPolicy({ allow: [val], deny: [] }),
-      "EventPolicyRule expectes {domain: string, name: string}"
+      "EventPolicyRule expects {domain: string, name: string}"
     );
     t.throws(
       () => cleanEventPolicy({ allow: [], deny: [val] }),
-      "EventPolicyRule expectes {domain: string, name: string}"
+      "EventPolicyRule expects {domain: string, name: string}"
     );
   }
 });
@@ -64,7 +64,7 @@ test("policy = cleanQueryPolicy(policy)", function(t) {
   ]) {
     t.throws(
       () => cleanQueryPolicy(val),
-      "QueryPolicy expectes {allow: QueryPolicyRule[], deny: QueryPolicyRule[]}"
+      "QueryPolicy expects {allow: QueryPolicyRule[], deny: QueryPolicyRule[]}"
     );
   }
 
@@ -90,11 +90,11 @@ test("policy = cleanQueryPolicy(policy)", function(t) {
   ]) {
     t.throws(
       () => cleanQueryPolicy({ allow: [val], deny: [] }),
-      "QueryPolicyRule expectes {rid: string, name: string}"
+      "QueryPolicyRule expects {rid: string, name: string}"
     );
     t.throws(
       () => cleanQueryPolicy({ allow: [], deny: [val] }),
-      "QueryPolicyRule expectes {rid: string, name: string}"
+      "QueryPolicyRule expects {rid: string, name: string}"
     );
   }
 });
