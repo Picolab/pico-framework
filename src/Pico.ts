@@ -198,6 +198,9 @@ export class Pico {
     if (!chann) {
       throw new Error(`delChannel(${eci}) - not found`);
     }
+    if (chann.familyChannelPicoID) {
+      throw new Error("Cannot delete family channels.");
+    }
     this.channels = this.channels.filter(c => c.id !== eci);
   }
 
