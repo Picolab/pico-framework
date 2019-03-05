@@ -91,6 +91,48 @@ test("hello world", async function(t) {
     ),
     "Said hello to Jim with an event."
   );
+
+  let err = await t.throwsAsync(
+    pf.query({
+      eci,
+      rid: "rid.hello",
+      name: "blah",
+      args: {}
+    })
+  );
+  t.is(
+    err + "",
+    'Error: Ruleset rid.hello does not have query function "blah"'
+  );
+
+  err = await t.throwsAsync(
+    pf.query({
+      eci: "notreal",
+      rid: "rid.hello",
+      name: "blah",
+      args: {}
+    })
+  );
+  t.is(err + "", "Error: ECI not found notreal");
+
+  err = await t.throwsAsync(
+    pf.eventQuery(
+      {
+        eci,
+        domain: "echo",
+        name: "hello",
+        data: { attrs: { name: "Jim" } },
+        time: Date.now()
+      },
+      {
+        eci: "different",
+        rid: "rid.hello",
+        name: "status",
+        args: {}
+      }
+    )
+  );
+  t.is(err + "", "Error: eventQuery must use the same channel");
 });
 
 test("pico can pass configuration to rulesets", async function(t) {

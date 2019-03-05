@@ -80,7 +80,7 @@ export class PicoFramework {
     event = cleanEvent(event);
     query = cleanQuery(query);
     if (query.eci !== event.eci) {
-      throw new Error("Send event+query must use the same channel");
+      throw new Error("eventQuery must use the same channel");
     }
 
     const { pico, channel } = await this.lookupChannel(event.eci);

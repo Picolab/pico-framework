@@ -301,10 +301,6 @@ export class Pico {
         delete this.txnWaiters[txn.id];
       }
     }
-    // log is empty, so cleanup any dangling waiters
-    for (const id of Object.keys(this.txnWaiters)) {
-      this.txnWaiters[id].resolve(null);
-    }
     this.txnWaiters = {};
     this.isWorking = false;
   }
