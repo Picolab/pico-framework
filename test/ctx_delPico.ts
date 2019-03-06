@@ -28,9 +28,8 @@ test("ctx.delPico", async function(t) {
       t.is(err + "", `Error: delPico(${eci}) - not found in children ECIs`);
     }
   }
-  t.is(
-    pf.db._test_allPicoIDs().join(","),
-    "id0,id3,id10,id14",
+  t.true(
+    /^id0,id3,id10,id1[45]/.test(pf.db._test_allPicoIDs().join(",")),
     "root -> child -> grandchild,grandchild"
   );
   await event("delPico", ["id5"]);

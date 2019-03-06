@@ -68,13 +68,7 @@ export class Pico {
     [id: string]: { resolve: (data: any) => void; reject: (err: any) => void };
   } = {};
 
-  private rulesets: {
-    [rid: string]: {
-      version: string;
-      instance: RulesetInstance;
-      config: RulesetConfig;
-    };
-  } = {};
+  private rulesetInstances: { [rid: string]: RulesetInstance } = {};
 
   constructor(private pf: PicoFramework) {
     this.id = pf.genID();
@@ -180,15 +174,8 @@ export class Pico {
       parent: this.parent,
       children: this.children.slice(0),
       channels: this.pf.db.getMyChannels(this.id).map(c => c.toReadOnly()),
-      rulesets: []
+      rulesets: this.pf.db.picoRulesets(this.id)
     };
-    for (const rid of Object.keys(this.rulesets)) {
-      data.rulesets.push({
-        rid,
-        version: this.rulesets[rid].version,
-        config: this.rulesets[rid].config
-      });
-    }
     return Object.freeze(data);
   }
 
@@ -216,43 +203,32 @@ export class Pico {
   async install(rid: string, version: string, config: RulesetConfig = {}) {
     const rs = this.pf.getRuleset(rid, version);
 
-    if (this.rulesets[rid]) {
-      if (this.rulesets[rid].version === version) {
-        // already have it
-        // but we need to init again b/c configure may have changed
-      } else {
-        // old version
-      }
+    // even if we already have that rid installed, we need to init again
+    // b/c the version or configuration may have changed
+    const ctx = createRulesetContext(this.pf, this, { rid, version, config });
+    const instance = rs.init(ctx);
+
+    try {
+      await this.pf.db.install(this.id, rs, config);
+    } catch (err) {
+      // TODO need to un-init?
+      throw err;
     }
-    this.rulesets[rid] = {
-      version,
-      instance: rs.init(
-        createRulesetContext(this.pf, this, { rid, version, config })
-      ),
-      config
-    };
+    this.rulesetInstances[rid] = instance;
   }
 
   async uninstall(rid: string) {
-    delete this.rulesets[rid];
-  }
-
-  private assertRid(rid: string) {
-    if (!this.rulesets[rid]) {
-      throw new Error(`Not installed ${rid}`);
-    }
+    await this.pf.db.uninstall(this.id, rid);
+    delete this.rulesetInstances[rid];
   }
 
   getEnt(rid: string, name: string) {
-    this.assertRid(rid);
     return this.pf.db.getEnt(this.id, rid, name);
   }
   putEnt(rid: string, name: string, value: any) {
-    this.assertRid(rid);
     return this.pf.db.putEnt(this.id, rid, name, value);
   }
   delEnt(rid: string, name: string) {
-    this.assertRid(rid);
     return this.pf.db.delEnt(this.id, rid, name);
   }
 
@@ -309,21 +285,20 @@ export class Pico {
         this.schedule.push(txn.event);
         let event: PicoEvent | undefined;
         while ((event = this.schedule.shift())) {
-          for (const rid of Object.keys(this.rulesets)) {
-            const rs = this.rulesets[rid];
-            if (rs.instance.event) {
+          for (const rInst of Object.values(this.rulesetInstances)) {
+            if (rInst.event) {
               // must process one event at a time to maintain pico single-threadedness
-              await rs.instance.event(event);
+              await rInst.event(event);
             }
           }
         }
         return;
       case "query":
-        const rs = this.rulesets[txn.query.rid];
-        if (!rs) {
+        const rInst = this.rulesetInstances[txn.query.rid];
+        if (!rInst) {
           throw new Error(`Pico doesn't have ${txn.query.rid} installed.`);
         }
-        const qfn = rs.instance.query && rs.instance.query[txn.query.name];
+        const qfn = rInst.query && rInst.query[txn.query.name];
         if (!qfn) {
           throw new Error(
             `Ruleset ${txn.query.rid} does not have query function "${

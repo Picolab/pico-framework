@@ -27,7 +27,7 @@ test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
     ]
   });
 
-  let err = await t.throws(() => pico.getEnt("rid.404", "var"));
+  let err = await t.throwsAsync(pico.getEnt("rid.404", "var"));
   t.is(err + "", "Error: Not installed rid.404");
 
   t.is(await pico.getEnt("rid.ctx", "some"), null);
