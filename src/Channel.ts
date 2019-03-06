@@ -1,7 +1,7 @@
 import * as _ from "lodash";
-import { isNotStringOrBlank } from "./utils";
 import { PicoEvent } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
+import { isNotStringOrBlank } from "./utils";
 
 export interface ChannelConfig {
   tags?: string[];
@@ -117,6 +117,17 @@ export class Channel {
       queryPolicy: _.cloneDeep(this.queryPolicy),
       familyChannelPicoID: this.familyChannelPicoID || null
     });
+  }
+
+  toDbJson() {
+    return {
+      id: this.id,
+      picoId: this.picoId,
+      tags: this.tags.slice(0),
+      eventPolicy: _.cloneDeep(this.eventPolicy),
+      queryPolicy: _.cloneDeep(this.queryPolicy),
+      familyChannelPicoID: this.familyChannelPicoID || null
+    };
   }
 }
 

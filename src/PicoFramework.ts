@@ -1,21 +1,33 @@
 import { AbstractLevelDOWN } from "abstract-leveldown";
 import * as cuid from "cuid";
+import { default as level, LevelUp } from "levelup";
+import { Channel } from "./Channel";
 import { Pico } from "./Pico";
 import { cleanEvent, PicoEvent } from "./PicoEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
 import { Ruleset } from "./Ruleset";
-import { Persistence } from "./Persistence";
+const charwise = require("charwise");
+const encode = require("encoding-down");
+const safeJsonCodec = require("level-json-coerce-null");
 
 export class PicoFramework {
-  db: Persistence;
+  db: LevelUp;
+
+  private rootPico?: Pico;
+  private picos: Pico[] = [];
 
   private rulesets: { [rid: string]: { [version: string]: Ruleset } } = {};
   private startupP: Promise<void>;
-  private rootPico?: Pico;
   genID: () => string;
 
   constructor(leveldown: AbstractLevelDOWN, genID: () => string = cuid) {
-    this.db = new Persistence(leveldown, genID);
+    this.db = level(
+      encode(leveldown, {
+        keyEncoding: charwise,
+        valueEncoding: safeJsonCodec
+      })
+    );
+
     this.genID = genID;
     this.startupP = this.startup();
   }
@@ -23,7 +35,7 @@ export class PicoFramework {
   private async startup() {
     if (!this.rootPico) {
       this.rootPico = new Pico(this);
-      this.db.addPico(this.rootPico);
+      this.addPico(this.rootPico);
     }
   }
 
@@ -42,7 +54,7 @@ export class PicoFramework {
   async event(event: PicoEvent, fromPicoId?: string): Promise<string | any> {
     event = cleanEvent(event);
 
-    const { pico, channel } = this.db.lookupChannel(event.eci);
+    const { pico, channel } = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
 
     return pico.event(event);
@@ -54,7 +66,7 @@ export class PicoFramework {
   ): Promise<string | any> {
     event = cleanEvent(event);
 
-    const { pico, channel } = this.db.lookupChannel(event.eci);
+    const { pico, channel } = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
 
     return pico.eventWait(event);
@@ -71,7 +83,7 @@ export class PicoFramework {
       throw new Error("eventQuery must use the same channel");
     }
 
-    const { pico, channel } = this.db.lookupChannel(event.eci);
+    const { pico, channel } = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
     channel.assertQueryPolicy(query, fromPicoId);
 
@@ -80,7 +92,7 @@ export class PicoFramework {
 
   async query(query: PicoQuery, fromPicoId?: string): Promise<any> {
     query = cleanQuery(query);
-    const { pico, channel } = this.db.lookupChannel(query.eci);
+    const { pico, channel } = this.lookupChannel(query.eci);
     channel.assertQueryPolicy(query, fromPicoId);
     return pico.query(query);
   }
@@ -100,5 +112,43 @@ export class PicoFramework {
       throw new Error(`Ruleset version not found ${rid}@${version}`);
     }
     return this.rulesets[rid][version];
+  }
+
+  addPico(pico: Pico) {
+    this.picos.push(pico);
+  }
+
+  removePico(picoId: string) {
+    this.picos = this.picos.filter(p => p.id !== picoId);
+  }
+
+  lookupChannel(
+    eci: string
+  ): {
+    pico: Pico;
+    channel: Channel;
+  } {
+    for (const pico of this.picos) {
+      for (const channel of Object.values(pico.channels)) {
+        if (channel.id === eci) {
+          return { pico, channel };
+        }
+      }
+    }
+    throw new Error(`ECI not found ${eci}`);
+  }
+
+  _test_allECIs(): string[] {
+    const list: string[] = [];
+    for (const pico of this.picos) {
+      for (const channel of Object.values(pico.channels)) {
+        list.push(channel.id);
+      }
+    }
+    return list;
+  }
+
+  _test_allPicoIDs(): string[] {
+    return this.picos.map(p => p.id);
   }
 }

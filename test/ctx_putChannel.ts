@@ -33,11 +33,7 @@ test("ctx.putChannel", async function(t) {
   let err = await t.throwsAsync(
     event("putChannel", ["id8", { tags: ["new", "tags"] }])
   );
-  t.is(
-    err + "",
-    "Error: ECI not found id8 on pico",
-    "cannot edit anothers channels"
-  );
+  t.is(err + "", "Error: ECI not found id8", "cannot edit anothers channels");
 
   function eventOnSub(name: string, args: any[] = []) {
     return event("eventQuery", [

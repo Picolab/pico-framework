@@ -61,14 +61,20 @@ export class Pico {
   id: string;
   parent: string | null = null;
   children: string[] = [];
+  channels: { [eci: string]: Channel } = {};
+  rulesets: {
+    [rid: string]: {
+      instance: RulesetInstance;
+      version: string;
+      config: RulesetConfig;
+    };
+  } = {};
 
   // TODO use flumelog-offset or similar
   private txnLog: PicoTxn[] = [];
   private txnWaiters: {
     [id: string]: { resolve: (data: any) => void; reject: (err: any) => void };
   } = {};
-
-  private rulesetInstances: { [rid: string]: RulesetInstance } = {};
 
   constructor(private pf: PicoFramework) {
     this.id = pf.genID();
@@ -130,7 +136,7 @@ export class Pico {
 
   async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf);
-    this.pf.db.addPico(child);
+    this.pf.addPico(child);
 
     const parentChannel = await this.newChannel(
       { tags: ["system", "parent"] },
@@ -159,45 +165,65 @@ export class Pico {
       throw new Error(`delPico(${eci}) - not found in children ECIs`);
     }
 
-    const { pico } = this.pf.db.lookupChannel(eci);
+    const { pico } = this.pf.lookupChannel(eci);
 
     for (const grandChild of pico.children) {
       // recursive delete
       await pico.delPico(grandChild);
     }
     this.children = this.children.filter(c => c !== eci);
-    this.pf.db.removePico(pico.id);
+    this.pf.removePico(pico.id);
   }
 
   toReadOnly(): PicoReadOnly {
     const data: PicoReadOnly = {
       parent: this.parent,
       children: this.children.slice(0),
-      channels: this.pf.db.getMyChannels(this.id).map(c => c.toReadOnly()),
-      rulesets: this.pf.db.picoRulesets(this.id)
+      channels: Object.values(this.channels).map(c => c.toReadOnly()),
+      rulesets: Object.keys(this.rulesets).map(rid => ({
+        rid,
+        version: this.rulesets[rid].version,
+        config: this.rulesets[rid].config
+      }))
     };
     return Object.freeze(data);
   }
 
-  newChannel(
+  async newChannel(
     conf?: ChannelConfig,
     familyChannelPicoID?: string
   ): Promise<Channel> {
-    return this.pf.db.addChannel(this.id, conf, familyChannelPicoID);
+    const chann = new Channel(
+      this.id,
+      this.pf.genID(),
+      conf,
+      familyChannelPicoID
+    );
+    await this.pf.db.put(["pico-channel", chann.id], chann.toDbJson());
+    this.channels[chann.id] = chann;
+    return chann;
   }
 
   async putChannel(eci: string, conf: ChannelConfig): Promise<Channel> {
-    const chann = await this.pf.db.getMyChannel(this.id, eci);
+    const chann = this.channels[eci];
+    if (!chann) {
+      throw new Error(`ECI not found ${eci}`);
+    }
     chann.update(conf);
+    await this.pf.db.put(["pico-channel", chann.id], chann.toDbJson());
     return chann;
   }
 
   async delChannel(eci: string): Promise<void> {
-    const chann = await this.pf.db.getMyChannel(this.id, eci);
+    const chann = this.channels[eci];
+    if (!chann) {
+      throw new Error(`ECI not found ${eci}`);
+    }
     if (chann.familyChannelPicoID) {
       throw new Error("Cannot delete family channels.");
     }
-    await this.pf.db.delChannel(eci);
+    await this.pf.db.del(["pico-channel", chann.id], chann.toReadOnly());
+    delete this.channels[eci];
   }
 
   async install(rid: string, version: string, config: RulesetConfig = {}) {
@@ -209,27 +235,50 @@ export class Pico {
     const instance = rs.init(ctx);
 
     try {
-      await this.pf.db.install(this.id, rs, config);
+      await this.pf.db.put(["pico-ruleset", this.id, rid], {
+        rid,
+        version,
+        config
+      });
     } catch (err) {
       // TODO need to un-init?
       throw err;
     }
-    this.rulesetInstances[rid] = instance;
+    this.rulesets[rid] = { version, config, instance };
   }
 
   async uninstall(rid: string) {
-    await this.pf.db.uninstall(this.id, rid);
-    delete this.rulesetInstances[rid];
+    await this.pf.db.del(["pico-ruleset", this.id, rid]);
+    delete this.rulesets[rid];
   }
 
-  getEnt(rid: string, name: string) {
-    return this.pf.db.getEnt(this.id, rid, name);
+  private assertInstalled(rid: string) {
+    if (!this.rulesets[rid]) {
+      throw new Error(`Not installed ${rid}`);
+    }
   }
-  putEnt(rid: string, name: string, value: any) {
-    return this.pf.db.putEnt(this.id, rid, name, value);
+
+  async getEnt(rid: string, name: string) {
+    this.assertInstalled(rid);
+    let data: any;
+    try {
+      data = await this.pf.db.get(["entvar", this.id, rid, name]);
+    } catch (err) {
+      if (err.notFound) {
+        return null;
+      }
+    }
+    return data;
   }
-  delEnt(rid: string, name: string) {
-    return this.pf.db.delEnt(this.id, rid, name);
+
+  async putEnt(rid: string, name: string, value: any) {
+    this.assertInstalled(rid);
+    await this.pf.db.put(["entvar", this.id, rid, name], value);
+  }
+
+  async delEnt(rid: string, name: string) {
+    this.assertInstalled(rid);
+    await this.pf.db.del(["entvar", this.id, rid, name]);
   }
 
   waitFor(id: string): Promise<any> {
@@ -285,20 +334,20 @@ export class Pico {
         this.schedule.push(txn.event);
         let event: PicoEvent | undefined;
         while ((event = this.schedule.shift())) {
-          for (const rInst of Object.values(this.rulesetInstances)) {
-            if (rInst.event) {
+          for (const rs of Object.values(this.rulesets)) {
+            if (rs.instance.event) {
               // must process one event at a time to maintain pico single-threadedness
-              await rInst.event(event);
+              await rs.instance.event(event);
             }
           }
         }
         return;
       case "query":
-        const rInst = this.rulesetInstances[txn.query.rid];
-        if (!rInst) {
+        const rs = this.rulesets[txn.query.rid];
+        if (!rs) {
           throw new Error(`Pico doesn't have ${txn.query.rid} installed.`);
         }
-        const qfn = rInst.query && rInst.query[txn.query.name];
+        const qfn = rs.instance.query && rs.instance.query[txn.query.name];
         if (!qfn) {
           throw new Error(
             `Ruleset ${txn.query.rid} does not have query function "${

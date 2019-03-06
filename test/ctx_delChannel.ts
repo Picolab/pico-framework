@@ -21,7 +21,7 @@ test("ctx.delChannel", async function(t) {
   t.is(err + "", "Error: Cannot delete family channels.");
 
   err = await t.throwsAsync(event("delChannel", ["id8"]));
-  t.is(err + "", "Error: ECI not found id8 on pico");
+  t.is(err + "", "Error: ECI not found id8");
 
   function eventOnSub(name: string, args: any[] = []) {
     return event("eventQuery", [
