@@ -20,8 +20,8 @@ test("ctx.delPico", async function(t) {
   err = await t.throwsAsync(event("delPico", ["one"]));
   t.is(err + "", "Error: delPico(one) - not found in children ECIs");
 
-  const allECIs = pf.db.allECIs();
-  for (const eci of allECIs) {
+  const _test_allECIs = pf.db._test_allECIs();
+  for (const eci of _test_allECIs) {
     if (eci !== "id5") {
       // id5 is the only one that will delete a pico from the root
       err = await t.throwsAsync(event("delPico", [eci]));
@@ -29,10 +29,10 @@ test("ctx.delPico", async function(t) {
     }
   }
   t.is(
-    pf.db.allPicoIDs().join(","),
+    pf.db._test_allPicoIDs().join(","),
     "id0,id3,id10,id14",
     "root -> child -> grandchild,grandchild"
   );
   await event("delPico", ["id5"]);
-  t.is(pf.db.allPicoIDs().join(","), "id0", "only root pico now");
+  t.is(pf.db._test_allPicoIDs().join(","), "id0", "only root pico now");
 });

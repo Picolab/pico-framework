@@ -19,6 +19,7 @@ export interface ChannelReadOnly {
 
 export class Channel {
   id: string;
+  picoId: string;
 
   /**
    * A way to categorize channels i.e. bulk update of a group of channels
@@ -44,7 +45,13 @@ export class Channel {
    */
   familyChannelPicoID?: string;
 
-  constructor(id: string, conf?: ChannelConfig, familyChannelPicoID?: string) {
+  constructor(
+    picoId: string,
+    id: string,
+    conf?: ChannelConfig,
+    familyChannelPicoID?: string
+  ) {
+    this.picoId = picoId;
     this.id = id;
     if (familyChannelPicoID) {
       this.tags = (conf && conf.tags) || [];

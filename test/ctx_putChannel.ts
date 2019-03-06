@@ -35,7 +35,7 @@ test("ctx.putChannel", async function(t) {
   );
   t.is(
     err + "",
-    "Error: putChannel(id8 , ...) - not found",
+    "Error: ECI not found id8 on pico",
     "cannot edit anothers channels"
   );
 

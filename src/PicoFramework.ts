@@ -1,7 +1,7 @@
 import { AbstractLevelDOWN } from "abstract-leveldown";
 import * as cuid from "cuid";
 import { default as level, LevelUp } from "levelup";
-import { Channel } from "./Channel";
+import { Channel, ChannelConfig } from "./Channel";
 import { Pico } from "./Pico";
 import { cleanEvent, PicoEvent } from "./PicoEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
@@ -16,7 +16,12 @@ class Persistence {
 
   private picos: Pico[] = [];
 
-  constructor(leveldown: AbstractLevelDOWN) {
+  private channels: Channel[] = [];
+
+  constructor(
+    leveldown: AbstractLevelDOWN,
+    private genID: () => string = cuid
+  ) {
     this.db = level(
       encode(leveldown, {
         keyEncoding: charwise,
@@ -29,30 +34,47 @@ class Persistence {
     this.picos.push(pico);
   }
 
+  async addChannel(
+    picoId: string,
+    conf?: ChannelConfig,
+    familyChannelPicoID?: string
+  ) {
+    const chann = new Channel(picoId, this.genID(), conf, familyChannelPicoID);
+    this.channels.push(chann);
+    return chann;
+  }
+
+  async getMyChannel(picoId: string, eci: string): Promise<Channel> {
+    const { channel } = this.lookupChannel(eci);
+    if (picoId !== channel.picoId) {
+      throw new Error(`ECI not found ${eci} on pico`);
+    }
+    return channel;
+  }
+
+  getMyChannels(picoId: string): Channel[] {
+    return this.channels.filter(c => c.picoId === picoId);
+  }
+
+  async delChannel(eci: string) {
+    this.channels = this.channels.filter(c => c.id !== eci);
+  }
+
   removePico(picoId: string) {
     this.picos = this.picos.filter(p => p.id !== picoId);
   }
 
-  async lookupChannel(eci: string): Promise<{ pico: Pico; channel: Channel }> {
-    for (const pico of this.picos) {
-      for (const channel of pico.channels) {
-        if (channel.id === eci) {
-          return { pico, channel };
+  lookupChannel(eci: string): { pico: Pico; channel: Channel } {
+    for (const channel of this.channels) {
+      if (channel.id === eci) {
+        for (const pico of this.picos) {
+          if (pico.id === channel.picoId) {
+            return { pico, channel };
+          }
         }
       }
     }
     throw new Error(`ECI not found ${eci}`);
-  }
-
-  allECIs(): string[] {
-    return this.picos.reduce(
-      (ids: string[], p) => ids.concat(p.channels.map(c => c.id)),
-      []
-    );
-  }
-
-  allPicoIDs(): string[] {
-    return this.picos.map(p => p.id);
   }
 
   async getEnt(picoId: string, rid: string, name: string) {
@@ -72,6 +94,14 @@ class Persistence {
   async delEnt(picoId: string, rid: string, name: string) {
     await this.db.del(["entvar", picoId, rid, name]);
   }
+
+  _test_allECIs(): string[] {
+    return this.channels.map(c => c.id);
+  }
+
+  _test_allPicoIDs(): string[] {
+    return this.picos.map(p => p.id);
+  }
 }
 
 export class PicoFramework {
@@ -83,7 +113,7 @@ export class PicoFramework {
   genID: () => string;
 
   constructor(leveldown: AbstractLevelDOWN, genID: () => string = cuid) {
-    this.db = new Persistence(leveldown);
+    this.db = new Persistence(leveldown, genID);
     this.genID = genID;
     this.startupP = this.startup();
   }
@@ -110,7 +140,7 @@ export class PicoFramework {
   async event(event: PicoEvent, fromPicoId?: string): Promise<string | any> {
     event = cleanEvent(event);
 
-    const { pico, channel } = await this.db.lookupChannel(event.eci);
+    const { pico, channel } = this.db.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
 
     return pico.event(event);
@@ -122,7 +152,7 @@ export class PicoFramework {
   ): Promise<string | any> {
     event = cleanEvent(event);
 
-    const { pico, channel } = await this.db.lookupChannel(event.eci);
+    const { pico, channel } = this.db.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
 
     return pico.eventWait(event);
@@ -139,7 +169,7 @@ export class PicoFramework {
       throw new Error("eventQuery must use the same channel");
     }
 
-    const { pico, channel } = await this.db.lookupChannel(event.eci);
+    const { pico, channel } = this.db.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
     channel.assertQueryPolicy(query, fromPicoId);
 
@@ -148,7 +178,7 @@ export class PicoFramework {
 
   async query(query: PicoQuery, fromPicoId?: string): Promise<any> {
     query = cleanQuery(query);
-    const { pico, channel } = await this.db.lookupChannel(query.eci);
+    const { pico, channel } = this.db.lookupChannel(query.eci);
     channel.assertQueryPolicy(query, fromPicoId);
     return pico.query(query);
   }

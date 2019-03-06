@@ -59,9 +59,8 @@ export interface NewPicoConfig {
 
 export class Pico {
   id: string;
-  parentChannel: Channel | null = null;
-  channels: Channel[] = [];
-  children: { pico: Pico; channel: Channel }[] = [];
+  parent: string | null = null;
+  children: string[] = [];
 
   // TODO use flumelog-offset or similar
   private txnLog: PicoTxn[] = [];
@@ -69,7 +68,7 @@ export class Pico {
     [id: string]: { resolve: (data: any) => void; reject: (err: any) => void };
   } = {};
 
-  rulesets: {
+  private rulesets: {
     [rid: string]: {
       version: string;
       instance: RulesetInstance;
@@ -139,14 +138,19 @@ export class Pico {
     const child = new Pico(this.pf);
     this.pf.db.addPico(child);
 
-    child.parentChannel = await this.newChannel(
+    const parentChannel = await this.newChannel(
       { tags: ["system", "parent"] },
       child.id
     );
-    this.children.push({
-      pico: child,
-      channel: await child.newChannel({ tags: ["system", "child"] }, this.id)
-    });
+    const childChannel = await child.newChannel(
+      { tags: ["system", "child"] },
+      this.id
+    );
+
+    child.parent = parentChannel.id;
+
+    this.children.push(childChannel.id);
+
     if (conf && conf.rulesets) {
       for (const rs of conf.rulesets) {
         await child.install(rs.rid, rs.version, rs.config);
@@ -157,23 +161,25 @@ export class Pico {
   }
 
   async delPico(eci: string) {
-    const child = this.children.find(c => c.channel.id === eci);
-    if (!child) {
+    if (this.children.indexOf(eci) < 0) {
       throw new Error(`delPico(${eci}) - not found in children ECIs`);
     }
-    for (const grandChild of child.pico.children) {
+
+    const { pico } = this.pf.db.lookupChannel(eci);
+
+    for (const grandChild of pico.children) {
       // recursive delete
-      await child.pico.delPico(grandChild.channel.id);
+      await pico.delPico(grandChild);
     }
-    this.children = this.children.filter(c => c.channel.id !== eci);
-    this.pf.db.removePico(child.pico.id);
+    this.children = this.children.filter(c => c !== eci);
+    this.pf.db.removePico(pico.id);
   }
 
   toReadOnly(): PicoReadOnly {
     const data: PicoReadOnly = {
-      parent: this.parentChannel ? this.parentChannel.id : null,
-      children: this.children.map(c => c.channel.id),
-      channels: this.channels.map(c => c.toReadOnly()),
+      parent: this.parent,
+      children: this.children.slice(0),
+      channels: this.pf.db.getMyChannels(this.id).map(c => c.toReadOnly()),
       rulesets: []
     };
     for (const rid of Object.keys(this.rulesets)) {
@@ -186,33 +192,25 @@ export class Pico {
     return Object.freeze(data);
   }
 
-  async newChannel(
+  newChannel(
     conf?: ChannelConfig,
     familyChannelPicoID?: string
   ): Promise<Channel> {
-    const chann = new Channel(this.pf.genID(), conf, familyChannelPicoID);
-    this.channels.push(chann);
-    return chann;
+    return this.pf.db.addChannel(this.id, conf, familyChannelPicoID);
   }
 
   async putChannel(eci: string, conf: ChannelConfig): Promise<Channel> {
-    const chann = this.channels.find(c => c.id === eci);
-    if (!chann) {
-      throw new Error(`putChannel(${eci} , ...) - not found`);
-    }
+    const chann = await this.pf.db.getMyChannel(this.id, eci);
     chann.update(conf);
     return chann;
   }
 
   async delChannel(eci: string): Promise<void> {
-    const chann = this.channels.find(c => c.id === eci);
-    if (!chann) {
-      throw new Error(`delChannel(${eci}) - not found`);
-    }
+    const chann = await this.pf.db.getMyChannel(this.id, eci);
     if (chann.familyChannelPicoID) {
       throw new Error("Cannot delete family channels.");
     }
-    this.channels = this.channels.filter(c => c.id !== eci);
+    await this.pf.db.delChannel(eci);
   }
 
   async install(rid: string, version: string, config: RulesetConfig = {}) {

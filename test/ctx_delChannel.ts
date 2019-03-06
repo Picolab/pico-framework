@@ -21,7 +21,7 @@ test("ctx.delChannel", async function(t) {
   t.is(err + "", "Error: Cannot delete family channels.");
 
   err = await t.throwsAsync(event("delChannel", ["id8"]));
-  t.is(err + "", "Error: delChannel(id8) - not found");
+  t.is(err + "", "Error: ECI not found id8 on pico");
 
   function eventOnSub(name: string, args: any[] = []) {
     return event("eventQuery", [
@@ -36,7 +36,7 @@ test("ctx.delChannel", async function(t) {
   t.is(await eventOnSub("delChannel", ["id8"]), undefined);
 
   err = await t.throwsAsync(eventOnSub("delChannel", ["id8"]));
-  t.is(err + "", "Error: delChannel(id8) - not found");
+  t.is(err + "", "Error: ECI not found id8");
 
   sub = await event("query", [{ eci: "id5", rid: "rid.ctx", name: "pico" }]);
   t.deepEqual(sub.channels.map((c: any) => c.id), ["id5"]);

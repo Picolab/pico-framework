@@ -14,7 +14,7 @@ test("ctx.newChannel", async function(t) {
     rulesets: [{ rid: "foo", version: "0.0.0" }]
   });
 
-  const eciToChild = pico.children[0].channel.id;
+  const eciToChild = pico.children[0];
 
   function mkEv(eci: string): PicoEvent {
     return { eci, domain: "a", name: "b", data: { attrs: {} }, time: 0 };
