@@ -2,6 +2,7 @@ import * as _ from "lodash";
 import { PicoEvent } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
 import { isNotStringOrBlank } from "./utils";
+import { AbstractBatch } from "abstract-leveldown";
 
 export interface ChannelConfig {
   tags?: string[];
@@ -119,14 +120,18 @@ export class Channel {
     });
   }
 
-  toDbJson() {
+  toDbPut(): AbstractBatch {
     return {
-      id: this.id,
-      picoId: this.picoId,
-      tags: this.tags.slice(0),
-      eventPolicy: _.cloneDeep(this.eventPolicy),
-      queryPolicy: _.cloneDeep(this.queryPolicy),
-      familyChannelPicoID: this.familyChannelPicoID || null
+      type: "put",
+      key: ["pico", this.id],
+      value: {
+        id: this.id,
+        picoId: this.picoId,
+        tags: this.tags,
+        eventPolicy: this.eventPolicy,
+        queryPolicy: this.queryPolicy,
+        familyChannelPicoID: this.familyChannelPicoID || null
+      }
     };
   }
 }

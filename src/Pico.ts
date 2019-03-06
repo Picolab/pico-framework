@@ -4,6 +4,7 @@ import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext } from "./RulesetContext";
+import { AbstractBatch } from "abstract-leveldown";
 
 interface PicoTxn_base {
   id: string;
@@ -136,26 +137,51 @@ export class Pico {
 
   async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf);
-    this.pf.addPico(child);
-
-    const parentChannel = await this.newChannel(
+    const parentChannel = this.newChannelBase(
       { tags: ["system", "parent"] },
       child.id
     );
-    const childChannel = await child.newChannel(
+    child.parent = parentChannel.id;
+
+    const childChannel = child.newChannelBase(
       { tags: ["system", "child"] },
       this.id
     );
-
-    child.parent = parentChannel.id;
-
+    child.channels[childChannel.id] = childChannel;
     this.children.push(childChannel.id);
+
+    const dbOps: AbstractBatch[] = [
+      this.toDbPut(),
+      child.toDbPut(),
+      parentChannel.toDbPut(),
+      childChannel.toDbPut()
+    ];
 
     if (conf && conf.rulesets) {
       for (const rs of conf.rulesets) {
-        await child.install(rs.rid, rs.version, rs.config);
+        const { instance, dbPut } = child.installBase(
+          rs.rid,
+          rs.version,
+          rs.config
+        );
+        dbOps.push(dbPut);
+        child.rulesets[rs.rid] = {
+          version: rs.version,
+          config: rs.config || {},
+          instance
+        };
       }
     }
+
+    try {
+      await this.pf.db.batch(dbOps);
+    } catch (err) {
+      this.children = this.children.filter(c => c !== childChannel.id);
+      throw err;
+    }
+
+    this.channels[parentChannel.id] = parentChannel;
+    this.pf.addPico(child);
 
     return child;
   }
@@ -189,18 +215,38 @@ export class Pico {
     return Object.freeze(data);
   }
 
+  toDbPut(): AbstractBatch {
+    return {
+      type: "put",
+      key: ["pico", this.id],
+      value: {
+        id: this.id,
+        parent: this.parent,
+        children: this.children.slice(0)
+      }
+    };
+  }
+
   async newChannel(
     conf?: ChannelConfig,
     familyChannelPicoID?: string
   ): Promise<Channel> {
+    const chann = this.newChannelBase(conf, familyChannelPicoID);
+    await this.pf.db.batch([chann.toDbPut()]);
+    this.channels[chann.id] = chann;
+    return chann;
+  }
+
+  private newChannelBase(
+    conf?: ChannelConfig,
+    familyChannelPicoID?: string
+  ): Channel {
     const chann = new Channel(
       this.id,
       this.pf.genID(),
       conf,
       familyChannelPicoID
     );
-    await this.pf.db.put(["pico-channel", chann.id], chann.toDbJson());
-    this.channels[chann.id] = chann;
     return chann;
   }
 
@@ -210,7 +256,7 @@ export class Pico {
       throw new Error(`ECI not found ${eci}`);
     }
     chann.update(conf);
-    await this.pf.db.put(["pico-channel", chann.id], chann.toDbJson());
+    await this.pf.db.batch([chann.toDbPut()]);
     return chann;
   }
 
@@ -227,6 +273,16 @@ export class Pico {
   }
 
   async install(rid: string, version: string, config: RulesetConfig = {}) {
+    const { instance, dbPut } = this.installBase(rid, version, config);
+    await this.pf.db.batch([dbPut]);
+    this.rulesets[rid] = { version, config, instance };
+  }
+
+  private installBase(
+    rid: string,
+    version: string,
+    config: RulesetConfig = {}
+  ): { instance: RulesetInstance; dbPut: AbstractBatch } {
     const rs = this.pf.getRuleset(rid, version);
 
     // even if we already have that rid installed, we need to init again
@@ -234,17 +290,18 @@ export class Pico {
     const ctx = createRulesetContext(this.pf, this, { rid, version, config });
     const instance = rs.init(ctx);
 
-    try {
-      await this.pf.db.put(["pico-ruleset", this.id, rid], {
-        rid,
-        version,
-        config
-      });
-    } catch (err) {
-      // TODO need to un-init?
-      throw err;
-    }
-    this.rulesets[rid] = { version, config, instance };
+    return {
+      instance,
+      dbPut: {
+        type: "put",
+        key: ["pico-ruleset", this.id, rid],
+        value: {
+          rid,
+          version,
+          config
+        }
+      }
+    };
   }
 
   async uninstall(rid: string) {

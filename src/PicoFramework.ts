@@ -34,8 +34,15 @@ export class PicoFramework {
 
   private async startup() {
     if (!this.rootPico) {
-      this.rootPico = new Pico(this);
-      this.addPico(this.rootPico);
+      // TODO load root-pico
+
+      const pico = new Pico(this);
+      await this.db.batch([
+        pico.toDbPut(),
+        { type: "put", key: ["root-pico"], value: pico.id }
+      ]);
+      this.rootPico = pico;
+      this.picos.push(pico);
     }
   }
 
@@ -129,10 +136,8 @@ export class PicoFramework {
     channel: Channel;
   } {
     for (const pico of this.picos) {
-      for (const channel of Object.values(pico.channels)) {
-        if (channel.id === eci) {
-          return { pico, channel };
-        }
+      if (pico.channels[eci]) {
+        return { pico, channel: pico.channels[eci] };
       }
     }
     throw new Error(`ECI not found ${eci}`);
