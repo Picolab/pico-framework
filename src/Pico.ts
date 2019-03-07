@@ -1,10 +1,11 @@
+import { AbstractBatch } from "abstract-leveldown";
+import * as _ from "lodash";
 import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext } from "./RulesetContext";
-import { AbstractBatch } from "abstract-leveldown";
 
 interface PicoTxn_base {
   id: string;
@@ -77,8 +78,8 @@ export class Pico {
     [id: string]: { resolve: (data: any) => void; reject: (err: any) => void };
   } = {};
 
-  constructor(private pf: PicoFramework) {
-    this.id = pf.genID();
+  constructor(private pf: PicoFramework, id: string) {
+    this.id = id;
   }
 
   async event(event: PicoEvent): Promise<string> {
@@ -136,7 +137,7 @@ export class Pico {
   }
 
   async newPico(conf?: NewPicoConfig) {
-    const child = new Pico(this.pf);
+    const child = new Pico(this.pf, this.pf.genID());
     const parentChannel = this.newChannelBase(
       { tags: ["system", "parent"] },
       child.id
@@ -212,6 +213,9 @@ export class Pico {
         config: this.rulesets[rid].config
       }))
     };
+    data.channels = _.sortBy(data.channels, c => {
+      return c.id;
+    });
     return Object.freeze(data);
   }
 
@@ -225,6 +229,13 @@ export class Pico {
         children: this.children.slice(0)
       }
     };
+  }
+
+  static fromDb(pf: PicoFramework, val: any): Pico {
+    const pico = new Pico(pf, val.id);
+    pico.parent = val.parent;
+    pico.children = val.children;
+    return pico;
   }
 
   async newChannel(

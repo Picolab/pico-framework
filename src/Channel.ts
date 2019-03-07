@@ -123,7 +123,7 @@ export class Channel {
   toDbPut(): AbstractBatch {
     return {
       type: "put",
-      key: ["pico", this.id],
+      key: ["pico-channel", this.id],
       value: {
         id: this.id,
         picoId: this.picoId,
@@ -133,6 +133,20 @@ export class Channel {
         familyChannelPicoID: this.familyChannelPicoID || null
       }
     };
+  }
+
+  static fromDb(val: any): Channel {
+    const chann = new Channel(
+      val.picoId,
+      val.id,
+      {
+        tags: val.tags,
+        eventPolicy: val.eventPolicy,
+        queryPolicy: val.queryPolicy
+      },
+      val.familyChannelPicoID
+    );
+    return chann;
   }
 }
 

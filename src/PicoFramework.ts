@@ -6,6 +6,7 @@ import { Pico } from "./Pico";
 import { cleanEvent, PicoEvent } from "./PicoEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
 import { Ruleset } from "./Ruleset";
+import { dbRange } from "./dbRange";
 const charwise = require("charwise");
 const encode = require("encoding-down");
 const safeJsonCodec = require("level-json-coerce-null");
@@ -33,10 +34,43 @@ export class PicoFramework {
   }
 
   private async startup() {
+    await dbRange(this.db, { prefix: ["pico"] }, data => {
+      const pico = Pico.fromDb(this, data.value);
+      this.picos.push(pico);
+    });
+
+    await dbRange(this.db, { prefix: ["pico-channel"] }, data => {
+      const chann = Channel.fromDb(data.value);
+      const pico = this.picos.find(pico => pico.id === chann.picoId);
+      if (!pico) {
+        throw new Error(`Missing picoId ${chann.picoId}`);
+      }
+      pico.channels[chann.id] = chann;
+    });
+
+    await dbRange(this.db, { prefix: ["pico-ruleset"] }, async data => {
+      const picoId = data.key[1];
+      const rid = data.key[2];
+      const pico = this.picos.find(pico => pico.id === picoId);
+      if (!pico) {
+        throw new Error(`Missing picoId ${picoId}`);
+      }
+      await pico.install(rid, data.value.version, data.value.config);
+    });
+
+    try {
+      const id = await this.db.get(["root-pico"]);
+      this.rootPico = this.picos.find(pico => pico.id === id);
+    } catch (err) {
+      if (!err.notFound) {
+        throw err;
+      }
+    }
+
     if (!this.rootPico) {
       // TODO load root-pico
 
-      const pico = new Pico(this);
+      const pico = new Pico(this, this.genID());
       await this.db.batch([
         pico.toDbPut(),
         { type: "put", key: ["root-pico"], value: pico.id }
