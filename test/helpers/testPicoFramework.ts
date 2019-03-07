@@ -1,6 +1,5 @@
 import { PicoFramework } from "../../src";
 import { Ruleset } from "../../src/Ruleset";
-const memdown = require("memdown");
 
 export async function testPicoFramework(rootRulesets: Ruleset[]) {
   let nextId = 0;
@@ -8,7 +7,7 @@ export async function testPicoFramework(rootRulesets: Ruleset[]) {
     return `id${nextId++}`;
   }
 
-  const pf = new PicoFramework(memdown(), genID);
+  const pf = new PicoFramework({ genID });
   await pf.start();
 
   for (const rs of rootRulesets) {

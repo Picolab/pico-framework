@@ -1,3 +1,3 @@
-import { PicoFramework } from "./PicoFramework";
+import { PicoFramework, PicoFrameworkConf } from "./PicoFramework";
 
-export { PicoFramework };
+export { PicoFramework, PicoFrameworkConf };

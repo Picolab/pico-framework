@@ -1,10 +1,9 @@
 import * as _ from "lodash";
 import test from "ava";
 import { PicoFramework } from "../src";
-const memdown = require("memdown");
 
 test("raiseEvent", async function(t) {
-  const pf = new PicoFramework(memdown());
+  const pf = new PicoFramework();
   await pf.start();
 
   pf.addRuleset({

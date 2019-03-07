@@ -4,19 +4,8 @@ import { dbRange } from "../src/dbRange";
 import { jsonDumpPico } from "./helpers/inspect";
 const memdown = require("memdown");
 
-function addRids(pf: PicoFramework) {
-  ["one", "two", "three"].forEach(rid => {
-    pf.addRuleset({
-      rid,
-      version: "0.0.0",
-      init(ctx) {
-        return {};
-      }
-    });
-  });
-}
-
 test("persistent", async function(t) {
+  // re-use the db on each restart
   const down = memdown();
 
   let nextId = 0;
@@ -24,9 +13,20 @@ test("persistent", async function(t) {
     return `id${nextId++}`;
   }
 
-  let pf = new PicoFramework(down, genID);
-  addRids(pf);
-  await pf.start();
+  async function restart(): Promise<PicoFramework> {
+    let pf = new PicoFramework({ leveldown: down, genID });
+    ["one", "two", "three"].forEach(rid => {
+      pf.addRuleset({
+        rid,
+        version: "0.0.0",
+        init: () => ({})
+      });
+    });
+    await pf.start();
+    return pf;
+  }
+
+  let pf = await restart();
 
   let pico = pf.rootPico;
   let pico0 = await pico.newPico();
@@ -49,9 +49,7 @@ test("persistent", async function(t) {
 
   let dumpBefore = await jsonDumpPico(pf, pf.rootPico);
 
-  pf = new PicoFramework(down, genID);
-  addRids(pf);
-  await pf.start();
+  pf = await restart();
 
   let dumpAfter = await jsonDumpPico(pf, pf.rootPico);
   t.deepEqual(dumpBefore, dumpAfter);
@@ -74,9 +72,7 @@ test("persistent", async function(t) {
     childrenPicos: []
   });
 
-  pf = new PicoFramework(down, genID);
-  addRids(pf);
-  await pf.start();
+  pf = await restart();
 
   t.deepEqual(await jsonDumpPico(pf, pf.rootPico), {
     parent: null,

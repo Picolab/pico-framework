@@ -1,13 +1,13 @@
 import { LevelUp } from "levelup";
 import * as _ from "lodash";
 
-export function dbRange(
+export function dbRange<T = any>(
   ldb: LevelUp,
   opts: any,
-  onData: (data: any, stop: () => void) => any
-): Promise<any[]> {
+  onData: (data: any, stop: () => void) => Promise<T> | T
+): Promise<T[]> {
   return new Promise(function(resolve, reject) {
-    const promises: Promise<any>[] = [];
+    const promises: Promise<T>[] = [];
 
     let hasCalledback = false;
     function callback(err?: any) {

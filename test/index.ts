@@ -1,10 +1,9 @@
 import test from "ava";
 import { isCuid } from "cuid";
 import { PicoFramework } from "../src";
-const memdown = require("memdown");
 
 test("hello world", async function(t) {
-  const pf = new PicoFramework(memdown());
+  const pf = new PicoFramework();
   await pf.start();
 
   pf.addRuleset({
@@ -137,7 +136,7 @@ test("hello world", async function(t) {
 });
 
 test("pico can pass configuration to rulesets", async function(t) {
-  const pf = new PicoFramework(memdown());
+  const pf = new PicoFramework();
   await pf.start();
 
   pf.addRuleset({
@@ -186,7 +185,7 @@ test("pico can pass configuration to rulesets", async function(t) {
 });
 
 test("check channel policies", async function(t) {
-  const pf = new PicoFramework(memdown());
+  const pf = new PicoFramework();
   await pf.start();
 
   pf.addRuleset({

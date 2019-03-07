@@ -2,14 +2,20 @@ import { AbstractLevelDOWN } from "abstract-leveldown";
 import * as cuid from "cuid";
 import { default as level, LevelUp } from "levelup";
 import { Channel } from "./Channel";
+import { dbRange } from "./dbRange";
 import { Pico } from "./Pico";
 import { cleanEvent, PicoEvent } from "./PicoEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
 import { Ruleset } from "./Ruleset";
-import { dbRange } from "./dbRange";
 const charwise = require("charwise");
 const encode = require("encoding-down");
 const safeJsonCodec = require("level-json-coerce-null");
+const memdown = require("memdown");
+
+export interface PicoFrameworkConf {
+  leveldown?: AbstractLevelDOWN;
+  genID?: () => string;
+}
 
 export class PicoFramework {
   db: LevelUp;
@@ -28,15 +34,14 @@ export class PicoFramework {
   private startupP: Promise<void>;
   genID: () => string;
 
-  constructor(leveldown: AbstractLevelDOWN, genID: () => string = cuid) {
+  constructor(conf?: PicoFrameworkConf) {
     this.db = level(
-      encode(leveldown, {
+      encode((conf && conf.leveldown) || memdown(), {
         keyEncoding: charwise,
         valueEncoding: safeJsonCodec
       })
     );
-
-    this.genID = genID;
+    this.genID = (conf && conf.genID) || cuid;
     this.startupP = this.startup();
   }
 
