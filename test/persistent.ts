@@ -30,6 +30,7 @@ test("persistent", async function(t) {
   let pico = await pf.getRootPico();
   let pico0 = await pico.newPico();
   let pico00 = await pico0.newPico();
+  let pico000 = await pico00.newPico();
   let pico1 = await pico.newPico();
   let pico10 = await pico1.newPico();
   let pico11 = await pico1.newPico();
@@ -38,6 +39,7 @@ test("persistent", async function(t) {
   await pico0.install("two", "0.0.0", { some: { thing: 22 } });
   await pico00.install("three", "0.0.0", { aaa: 1 });
   await pico00.install("two", "0.0.0");
+  await pico000.install("two", "0.0.0");
   await pico1.install("two", "0.0.0", { some: { thing: 22 } });
   await pico10.install("three", "0.0.0");
 
@@ -52,13 +54,15 @@ test("persistent", async function(t) {
   let dumpAfter = await jsonDump(pf, await pf.getRootPico());
   t.deepEqual(dumpBefore, dumpAfter);
 
-  t.is(pf._test_allPicoIDs().length, 6);
+  t.is(pf._test_allPicoIDs().length, 7);
 
   pico = await pf.getRootPico();
   await pico.uninstall("one");
   for (const eci of pico.children) {
     await pico.delPico(eci);
   }
+
+  t.is(pf._test_allPicoIDs().length, 1);
 
   t.deepEqual(await jsonDump(pf, await pf.getRootPico()), {
     parent: null,

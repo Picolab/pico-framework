@@ -194,31 +194,57 @@ export class Pico {
 
     const { pico } = this.pf.lookupChannel(eci);
 
-    for (const grandChild of pico.children) {
-      // recursive delete
-      await pico.delPico(grandChild);
-    }
+    const { ops, picoIds } = pico.delPicoDbOps();
 
-    for (const eci of Object.keys(pico.channels)) {
-      await this.pf.db.del(["pico-channel", eci]);
-    }
-    for (const rid of Object.keys(pico.rulesets)) {
-      await pico.uninstall(rid);
-    }
-
-    await this.pf.db.del(["pico", pico.id]);
-
-    await this.pf.db.del(["pico-channel", eci]);
-    delete this.channels[eci];
     if (pico.parent) {
-      await this.pf.db.del(["pico-channel", pico.parent]);
+      ops.push(this.channels[pico.parent].toDbDel());
+    }
+
+    this.children = this.children.filter(c => c !== eci);
+    ops.push(this.toDbPut());
+
+    try {
+      await this.pf.db.batch(ops);
+    } catch (err) {
+      this.children.push(eci); // restore state
+      throw err;
+    }
+
+    if (pico.parent) {
       delete this.channels[pico.parent];
     }
-    this.children = this.children.filter(c => c !== eci);
+    for (const id of picoIds) {
+      this.pf.removePico(id);
+    }
+  }
 
-    await this.pf.db.batch([this.toDbPut()]);
+  /**
+   * Recursively get the delete operations and ids
+   * DO NOT mutate state, only build the operations
+   */
+  private delPicoDbOps(): { ops: AbstractBatch[]; picoIds: string[] } {
+    let ops: AbstractBatch[] = [];
+    let picoIds: string[] = [];
 
-    this.pf.removePico(pico.id);
+    for (const eci of this.children) {
+      // recursive delete
+      const { pico } = this.pf.lookupChannel(eci);
+      const sub = pico.delPicoDbOps();
+      ops = ops.concat(sub.ops);
+      picoIds = picoIds.concat(sub.picoIds);
+    }
+
+    for (const channel of Object.values(this.channels)) {
+      ops.push(channel.toDbDel());
+    }
+    for (const rid of Object.keys(this.rulesets)) {
+      ops.push(this.uninstallBase(rid));
+    }
+    ops.push(this.toDbDel());
+
+    picoIds.push(this.id);
+
+    return { ops, picoIds };
   }
 
   toReadOnly(): PicoReadOnly {
@@ -248,6 +274,10 @@ export class Pico {
         children: this.children.slice(0)
       }
     };
+  }
+
+  toDbDel(): AbstractBatch {
+    return { type: "del", key: ["pico", this.id] };
   }
 
   static fromDb(pf: PicoFramework, val: any): Pico {
@@ -337,6 +367,13 @@ export class Pico {
   async uninstall(rid: string) {
     await this.pf.db.del(["pico-ruleset", this.id, rid]);
     delete this.rulesets[rid];
+  }
+
+  private uninstallBase(rid: string): AbstractBatch {
+    return {
+      type: "del",
+      key: ["pico-ruleset", this.id, rid]
+    };
   }
 
   private assertInstalled(rid: string) {

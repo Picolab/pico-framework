@@ -135,6 +135,10 @@ export class Channel {
     };
   }
 
+  toDbDel(): AbstractBatch {
+    return { type: "del", key: ["pico-channel", this.id] };
+  }
+
   static fromDb(val: any): Channel {
     const chann = new Channel(
       val.picoId,
