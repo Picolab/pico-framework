@@ -1,6 +1,7 @@
 import test from "ava";
 import { PicoFramework } from "../src";
 import { Pico } from "../src/Pico";
+import { dbRange } from "../src/dbRange";
 const memdown = require("memdown");
 
 function addRids(pf: PicoFramework) {
@@ -23,15 +24,15 @@ test("persistent", async function(t) {
     return `id${nextId++}`;
   }
 
-  const pf = new PicoFramework(down, genID);
+  let pf = new PicoFramework(down, genID);
   addRids(pf);
 
-  const pico = await pf.getRootPico();
-  const pico0 = await pico.newPico();
-  const pico00 = await pico0.newPico();
-  const pico1 = await pico.newPico();
-  const pico10 = await pico1.newPico();
-  const pico11 = await pico1.newPico();
+  let pico = await pf.getRootPico();
+  let pico0 = await pico.newPico();
+  let pico00 = await pico0.newPico();
+  let pico1 = await pico.newPico();
+  let pico10 = await pico1.newPico();
+  let pico11 = await pico1.newPico();
 
   await pico.install("one", "0.0.0", { one: "two" });
   await pico0.install("two", "0.0.0", { some: { thing: 22 } });
@@ -40,16 +41,47 @@ test("persistent", async function(t) {
   await pico1.install("two", "0.0.0", { some: { thing: 22 } });
   await pico10.install("three", "0.0.0");
 
-  const chann = await pico11.newChannel({ tags: ["one", "two"] });
+  let chann = await pico11.newChannel({ tags: ["one", "two"] });
   await pico11.putChannel(chann.id, { tags: ["changed", "it"] });
 
-  const dumpBefore = await jsonDump(pf, await pf.getRootPico());
+  let dumpBefore = await jsonDump(pf, await pf.getRootPico());
 
-  const pfAfter = new PicoFramework(down, genID);
-  addRids(pfAfter);
-  const dumpAfter = await jsonDump(pfAfter, await pfAfter.getRootPico());
+  pf = new PicoFramework(down, genID);
+  addRids(pf);
 
+  let dumpAfter = await jsonDump(pf, await pf.getRootPico());
   t.deepEqual(dumpBefore, dumpAfter);
+
+  t.is(pf._test_allPicoIDs().length, 6);
+
+  pico = await pf.getRootPico();
+  await pico.uninstall("one");
+  for (const eci of pico.children) {
+    await pico.delPico(eci);
+  }
+
+  t.deepEqual(await jsonDump(pf, await pf.getRootPico()), {
+    parent: null,
+    children: [],
+    channels: [],
+    rulesets: [],
+    childrenPicos: []
+  });
+
+  pf = new PicoFramework(down, genID);
+  addRids(pf);
+  t.deepEqual(await jsonDump(pf, await pf.getRootPico()), {
+    parent: null,
+    children: [],
+    channels: [],
+    rulesets: [],
+    childrenPicos: []
+  });
+
+  const dbKeys = await dbRange(pf.db, {}, function(data) {
+    return data.key.join("|");
+  });
+  t.deepEqual(dbKeys, ["pico|id0", "root-pico"]);
 });
 
 /**

@@ -198,7 +198,26 @@ export class Pico {
       // recursive delete
       await pico.delPico(grandChild);
     }
+
+    for (const eci of Object.keys(pico.channels)) {
+      await this.pf.db.del(["pico-channel", eci]);
+    }
+    for (const rid of Object.keys(pico.rulesets)) {
+      await pico.uninstall(rid);
+    }
+
+    await this.pf.db.del(["pico", pico.id]);
+
+    await this.pf.db.del(["pico-channel", eci]);
+    delete this.channels[eci];
+    if (pico.parent) {
+      await this.pf.db.del(["pico-channel", pico.parent]);
+      delete this.channels[pico.parent];
+    }
     this.children = this.children.filter(c => c !== eci);
+
+    await this.pf.db.batch([this.toDbPut()]);
+
     this.pf.removePico(pico.id);
   }
 
@@ -279,7 +298,7 @@ export class Pico {
     if (chann.familyChannelPicoID) {
       throw new Error("Cannot delete family channels.");
     }
-    await this.pf.db.del(["pico-channel", chann.id], chann.toReadOnly());
+    await this.pf.db.del(["pico-channel", chann.id]);
     delete this.channels[eci];
   }
 

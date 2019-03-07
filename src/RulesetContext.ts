@@ -35,11 +35,11 @@ export interface RulesetContext {
 }
 
 /**
- * This is a constructor function to be sure that we don't leak out things a ruleset should not have access to.
+ * This is a constructor function to be sure that we don't leak things that a ruleset should not have access to.
  *
- * @param pf pointer to the framework
+ * @param pf the framework
  * @param pico the pico the ruleset is installed on
- * @param ruleset info about the installed ruleset
+ * @param ruleset info/config about the installed ruleset
  */
 export function createRulesetContext(
   pf: PicoFramework,
@@ -67,8 +67,8 @@ export function createRulesetContext(
       const child = await pico.newPico(conf);
       return child.toReadOnly();
     },
-    async delPico(eci) {
-      await pico.delPico(eci);
+    delPico(eci) {
+      return pico.delPico(eci);
     },
 
     async newChannel(conf) {
@@ -81,16 +81,16 @@ export function createRulesetContext(
       return chann.toReadOnly();
     },
 
-    async delChannel(eci) {
-      await pico.delChannel(eci);
+    delChannel(eci) {
+      return pico.delChannel(eci);
     },
 
-    async install(rid, version, config) {
-      await pico.install(rid, version, config);
+    install(rid, version, config) {
+      return pico.install(rid, version, config);
     },
 
-    async uninstall(rid) {
-      await pico.uninstall(rid);
+    uninstall(rid) {
+      return pico.uninstall(rid);
     },
 
     getEnt(name) {
