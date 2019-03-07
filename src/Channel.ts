@@ -3,6 +3,7 @@ import { PicoEvent } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
 import { isNotStringOrBlank } from "./utils";
 import { AbstractBatch } from "abstract-leveldown";
+import { Pico } from "./Pico";
 
 export interface ChannelConfig {
   tags?: string[];
@@ -20,7 +21,7 @@ export interface ChannelReadOnly {
 
 export class Channel {
   id: string;
-  picoId: string;
+  pico: Pico;
 
   /**
    * A way to categorize channels i.e. bulk update of a group of channels
@@ -47,12 +48,12 @@ export class Channel {
   familyChannelPicoID?: string;
 
   constructor(
-    picoId: string,
+    pico: Pico,
     id: string,
     conf?: ChannelConfig,
     familyChannelPicoID?: string
   ) {
-    this.picoId = picoId;
+    this.pico = pico;
     this.id = id;
     if (familyChannelPicoID) {
       this.tags = (conf && conf.tags) || [];
@@ -126,7 +127,7 @@ export class Channel {
       key: ["pico-channel", this.id],
       value: {
         id: this.id,
-        picoId: this.picoId,
+        picoId: this.pico.id,
         tags: this.tags,
         eventPolicy: this.eventPolicy,
         queryPolicy: this.queryPolicy,
@@ -139,9 +140,9 @@ export class Channel {
     return { type: "del", key: ["pico-channel", this.id] };
   }
 
-  static fromDb(val: any): Channel {
+  static fromDb(pico: Pico, val: any): Channel {
     const chann = new Channel(
-      val.picoId,
+      pico,
       val.id,
       {
         tags: val.tags,

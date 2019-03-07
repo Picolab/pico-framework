@@ -47,11 +47,12 @@ export class PicoFramework {
     });
 
     await dbRange(this.db, { prefix: ["pico-channel"] }, data => {
-      const chann = Channel.fromDb(data.value);
-      const pico = this.picos.find(pico => pico.id === chann.picoId);
+      const { picoId } = data.value;
+      const pico = this.picos.find(pico => pico.id === picoId);
       if (!pico) {
-        throw new Error(`Missing picoId ${chann.picoId}`);
+        throw new Error(`Missing picoId ${picoId}`);
       }
+      const chann = Channel.fromDb(pico, data.value);
       pico.channels[chann.id] = chann;
     });
 
@@ -98,10 +99,10 @@ export class PicoFramework {
   async event(event: PicoEvent, fromPicoId?: string): Promise<string | any> {
     event = cleanEvent(event);
 
-    const { pico, channel } = this.lookupChannel(event.eci);
+    const channel = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
 
-    return pico.event(event);
+    return channel.pico.event(event);
   }
 
   async eventWait(
@@ -110,10 +111,10 @@ export class PicoFramework {
   ): Promise<string | any> {
     event = cleanEvent(event);
 
-    const { pico, channel } = this.lookupChannel(event.eci);
+    const channel = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
 
-    return pico.eventWait(event);
+    return channel.pico.eventWait(event);
   }
 
   async eventQuery(
@@ -127,29 +128,24 @@ export class PicoFramework {
       throw new Error("eventQuery must use the same channel");
     }
 
-    const { pico, channel } = this.lookupChannel(event.eci);
+    const channel = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
     channel.assertQueryPolicy(query, fromPicoId);
 
-    return pico.eventQuery(event, query);
+    return channel.pico.eventQuery(event, query);
   }
 
   async query(query: PicoQuery, fromPicoId?: string): Promise<any> {
     query = cleanQuery(query);
-    const { pico, channel } = this.lookupChannel(query.eci);
+    const channel = this.lookupChannel(query.eci);
     channel.assertQueryPolicy(query, fromPicoId);
-    return pico.query(query);
+    return channel.pico.query(query);
   }
 
-  lookupChannel(
-    eci: string
-  ): {
-    pico: Pico;
-    channel: Channel;
-  } {
+  lookupChannel(eci: string): Channel {
     for (const pico of this.picos) {
       if (pico.channels[eci]) {
-        return { pico, channel: pico.channels[eci] };
+        return pico.channels[eci];
       }
     }
     throw new Error(`ECI not found ${eci}`);

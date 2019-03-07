@@ -301,12 +301,7 @@ export class Pico {
     conf?: ChannelConfig,
     familyChannelPicoID?: string
   ): Channel {
-    const chann = new Channel(
-      this.id,
-      this.pf.genID(),
-      conf,
-      familyChannelPicoID
-    );
+    const chann = new Channel(this, this.pf.genID(), conf, familyChannelPicoID);
     return chann;
   }
 
