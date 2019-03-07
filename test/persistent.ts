@@ -1,7 +1,7 @@
 import test from "ava";
 import { PicoFramework } from "../src";
-import { Pico } from "../src/Pico";
 import { dbRange } from "../src/dbRange";
+import { jsonDumpPico } from "./helpers/inspect";
 const memdown = require("memdown");
 
 function addRids(pf: PicoFramework) {
@@ -26,8 +26,9 @@ test("persistent", async function(t) {
 
   let pf = new PicoFramework(down, genID);
   addRids(pf);
+  await pf.start();
 
-  let pico = await pf.getRootPico();
+  let pico = pf.rootPico;
   let pico0 = await pico.newPico();
   let pico00 = await pico0.newPico();
   let pico000 = await pico00.newPico();
@@ -46,25 +47,26 @@ test("persistent", async function(t) {
   let chann = await pico11.newChannel({ tags: ["one", "two"] });
   await pico11.putChannel(chann.id, { tags: ["changed", "it"] });
 
-  let dumpBefore = await jsonDump(pf, await pf.getRootPico());
+  let dumpBefore = await jsonDumpPico(pf, pf.rootPico);
 
   pf = new PicoFramework(down, genID);
   addRids(pf);
+  await pf.start();
 
-  let dumpAfter = await jsonDump(pf, await pf.getRootPico());
+  let dumpAfter = await jsonDumpPico(pf, pf.rootPico);
   t.deepEqual(dumpBefore, dumpAfter);
 
-  t.is(pf._test_allPicoIDs().length, 7);
+  t.is(pf.numberOfPicos(), 7);
 
-  pico = await pf.getRootPico();
+  pico = pf.rootPico;
   await pico.uninstall("one");
   for (const eci of pico.children) {
     await pico.delPico(eci);
   }
 
-  t.is(pf._test_allPicoIDs().length, 1);
+  t.is(pf.numberOfPicos(), 1);
 
-  t.deepEqual(await jsonDump(pf, await pf.getRootPico()), {
+  t.deepEqual(await jsonDumpPico(pf, pf.rootPico), {
     parent: null,
     children: [],
     channels: [],
@@ -74,7 +76,9 @@ test("persistent", async function(t) {
 
   pf = new PicoFramework(down, genID);
   addRids(pf);
-  t.deepEqual(await jsonDump(pf, await pf.getRootPico()), {
+  await pf.start();
+
+  t.deepEqual(await jsonDumpPico(pf, pf.rootPico), {
     parent: null,
     children: [],
     channels: [],
@@ -87,16 +91,3 @@ test("persistent", async function(t) {
   });
   t.deepEqual(dbKeys, ["pico|id0", "root-pico"]);
 });
-
-/**
- * dump the in-memory structure
- * to test if the picos are saved and reloaded at startup
- */
-function jsonDump(pf: PicoFramework, pico: Pico): any {
-  const json: any = Object.assign({}, pico.toReadOnly());
-  json.childrenPicos = pico.children.map(eci => {
-    const { pico } = pf.lookupChannel(eci);
-    return jsonDump(pf, pico);
-  });
-  return json;
-}

@@ -14,7 +14,14 @@ const safeJsonCodec = require("level-json-coerce-null");
 export class PicoFramework {
   db: LevelUp;
 
-  private rootPico?: Pico;
+  private rootPico_?: Pico;
+  public get rootPico(): Pico {
+    if (!this.rootPico_) {
+      throw new Error("rootPico has not started up yet");
+    }
+    return this.rootPico_;
+  }
+
   private picos: Pico[] = [];
 
   private rulesets: { [rid: string]: { [version: string]: Ruleset } } = {};
@@ -58,38 +65,34 @@ export class PicoFramework {
       await pico.install(rid, data.value.version, data.value.config);
     });
 
+    let rootId: string | null;
     try {
-      const id = await this.db.get(["root-pico"]);
-      this.rootPico = this.picos.find(pico => pico.id === id);
+      rootId = await this.db.get(["root-pico"]);
     } catch (err) {
-      if (!err.notFound) {
+      if (err.notFound) {
+        rootId = null;
+      } else {
         throw err;
       }
     }
-
-    if (!this.rootPico) {
-      // TODO load root-pico
-
+    if (rootId) {
+      this.rootPico_ = this.picos.find(pico => pico.id === rootId);
+      if (!this.rootPico_) {
+        throw new Error(`Bad root pico ID ${rootId}`);
+      }
+    } else {
       const pico = new Pico(this, this.genID());
       await this.db.batch([
         pico.toDbPut(),
         { type: "put", key: ["root-pico"], value: pico.id }
       ]);
-      this.rootPico = pico;
+      this.rootPico_ = pico;
       this.picos.push(pico);
     }
   }
 
   start() {
     return this.startupP;
-  }
-
-  async getRootPico(): Promise<Pico> {
-    await this.start();
-    if (!this.rootPico) {
-      throw new Error("No rootPico");
-    }
-    return this.rootPico;
   }
 
   async event(event: PicoEvent, fromPicoId?: string): Promise<string | any> {
@@ -138,6 +141,20 @@ export class PicoFramework {
     return pico.query(query);
   }
 
+  lookupChannel(
+    eci: string
+  ): {
+    pico: Pico;
+    channel: Channel;
+  } {
+    for (const pico of this.picos) {
+      if (pico.channels[eci]) {
+        return { pico, channel: pico.channels[eci] };
+      }
+    }
+    throw new Error(`ECI not found ${eci}`);
+  }
+
   addRuleset(rs: Ruleset) {
     if (!this.rulesets[rs.rid]) {
       this.rulesets[rs.rid] = {};
@@ -155,39 +172,25 @@ export class PicoFramework {
     return this.rulesets[rid][version];
   }
 
+  /**
+   * @ignore
+   */
   addPico(pico: Pico) {
     this.picos.push(pico);
   }
 
+  /**
+   * @ignore
+   */
   removePico(picoId: string) {
     this.picos = this.picos.filter(p => p.id !== picoId);
   }
 
-  lookupChannel(
-    eci: string
-  ): {
-    pico: Pico;
-    channel: Channel;
-  } {
-    for (const pico of this.picos) {
-      if (pico.channels[eci]) {
-        return { pico, channel: pico.channels[eci] };
-      }
-    }
-    throw new Error(`ECI not found ${eci}`);
-  }
-
-  _test_allECIs(): string[] {
-    const list: string[] = [];
-    for (const pico of this.picos) {
-      for (const channel of Object.values(pico.channels)) {
-        list.push(channel.id);
-      }
-    }
-    return list;
-  }
-
-  _test_allPicoIDs(): string[] {
-    return this.picos.map(p => p.id);
+  /**
+   * Return the number of pico's
+   * Usefull for testing
+   */
+  numberOfPicos() {
+    return this.picos.length;
   }
 }

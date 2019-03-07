@@ -9,7 +9,7 @@ test("ctx.newChannel", async function(t) {
     { rid: "foo", version: "0.0.0", init: () => ({ query: { b() {} } }) }
   ]);
 
-  const pico = await pf.getRootPico();
+  const pico = pf.rootPico;
   const subPico = await pico.newPico({
     rulesets: [{ rid: "foo", version: "0.0.0" }]
   });

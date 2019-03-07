@@ -5,6 +5,7 @@ const memdown = require("memdown");
 
 test("raiseEvent", async function(t) {
   const pf = new PicoFramework(memdown());
+  await pf.start();
 
   pf.addRuleset({
     rid: "rid.raise",
@@ -30,7 +31,7 @@ test("raiseEvent", async function(t) {
     }
   });
 
-  const pico = await pf.getRootPico();
+  const pico = pf.rootPico;
   const eci = (await pico.newChannel()).id;
   await pico.install("rid.raise", "0.0.0");
 

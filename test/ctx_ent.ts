@@ -18,7 +18,7 @@ test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
     init: () => ({})
   });
 
-  const pico = await pf.getRootPico();
+  const pico = await pf.rootPico;
   pico.install("rid.other", "0.0.0");
   const subPico = await pico.newPico({
     rulesets: [
