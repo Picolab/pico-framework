@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
+import { RulesetInstance } from "../src/Ruleset";
 
 test("ctx.install", async function(t) {
   const { pf, eci, event } = await mkCtxTestEnv();
@@ -26,7 +27,7 @@ test("ctx.install", async function(t) {
   pf.addRuleset({
     rid: "foo.bar",
     version: "1.1.1",
-    init() {
+    async init(): Promise<RulesetInstance> {
       return {
         event(event) {
           history.push(`foo.bar@1.1.1 ${event.domain}:${event.name}`);

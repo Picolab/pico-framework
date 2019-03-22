@@ -4,7 +4,7 @@ import { RulesetContext } from "./RulesetContext";
 export interface Ruleset {
   rid: string;
   version: string;
-  init(conf: RulesetContext): RulesetInstance;
+  init(ctx: RulesetContext): Promise<RulesetInstance> | RulesetInstance;
 }
 
 export interface RulesetConfig {

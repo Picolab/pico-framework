@@ -160,7 +160,7 @@ export class Pico {
 
     if (conf && conf.rulesets) {
       for (const rs of conf.rulesets) {
-        const { instance, dbPut } = child.installBase(
+        const { instance, dbPut } = await child.installBase(
           rs.rid,
           rs.version,
           rs.config
@@ -328,22 +328,22 @@ export class Pico {
   }
 
   async install(rid: string, version: string, config: RulesetConfig = {}) {
-    const { instance, dbPut } = this.installBase(rid, version, config);
+    const { instance, dbPut } = await this.installBase(rid, version, config);
     await this.pf.db.batch([dbPut]);
     this.rulesets[rid] = { version, config, instance };
   }
 
-  private installBase(
+  private async installBase(
     rid: string,
     version: string,
     config: RulesetConfig = {}
-  ): { instance: RulesetInstance; dbPut: AbstractBatch } {
+  ): Promise<{ instance: RulesetInstance; dbPut: AbstractBatch }> {
     const rs = this.pf.getRuleset(rid, version);
 
     // even if we already have that rid installed, we need to init again
     // b/c the version or configuration may have changed
     const ctx = createRulesetContext(this.pf, this, { rid, version, config });
-    const instance = rs.init(ctx);
+    const instance = await rs.init(ctx);
 
     return {
       instance,
