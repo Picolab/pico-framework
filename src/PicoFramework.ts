@@ -182,6 +182,16 @@ export class PicoFramework {
     return this.rulesets[rid][version];
   }
 
+  listRulesets(): Ruleset[] {
+    const list: Ruleset[] = [];
+    for (const rid of Object.keys(this.rulesets)) {
+      for (const version of Object.keys(this.rulesets[rid])) {
+        list.push(this.rulesets[rid][version]);
+      }
+    }
+    return list;
+  }
+
   /**
    * @ignore
    */
