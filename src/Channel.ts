@@ -1,9 +1,8 @@
 import * as _ from "lodash";
+import { Pico } from "./Pico";
 import { PicoEvent } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
-import { isNotStringOrBlank } from "./utils";
-import { AbstractBatch } from "abstract-leveldown";
-import { Pico } from "./Pico";
+import { isNotStringOrBlank, LevelBatch } from "./utils";
 
 export interface ChannelConfig {
   tags?: string[];
@@ -121,7 +120,7 @@ export class Channel {
     });
   }
 
-  toDbPut(): AbstractBatch {
+  toDbPut(): LevelBatch {
     return {
       type: "put",
       key: ["pico-channel", this.id],
@@ -136,7 +135,7 @@ export class Channel {
     };
   }
 
-  toDbDel(): AbstractBatch {
+  toDbDel(): LevelBatch {
     return { type: "del", key: ["pico-channel", this.id] };
   }
 

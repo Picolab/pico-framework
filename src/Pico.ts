@@ -1,4 +1,3 @@
-import { AbstractBatch } from "abstract-leveldown";
 import * as _ from "lodash";
 import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
@@ -6,6 +5,7 @@ import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext } from "./RulesetContext";
+import { LevelBatch } from "./utils";
 
 interface PicoTxn_base {
   id: string;
@@ -151,7 +151,7 @@ export class Pico {
     child.channels[childChannel.id] = childChannel;
     this.children.push(childChannel.id);
 
-    const dbOps: AbstractBatch[] = [
+    const dbOps: LevelBatch[] = [
       this.toDbPut(),
       child.toDbPut(),
       parentChannel.toDbPut(),
@@ -222,8 +222,8 @@ export class Pico {
    * Recursively get the delete operations and ids
    * DO NOT mutate state, only build the operations
    */
-  private delPicoDbOps(): { ops: AbstractBatch[]; picoIds: string[] } {
-    let ops: AbstractBatch[] = [];
+  private delPicoDbOps(): { ops: LevelBatch[]; picoIds: string[] } {
+    let ops: LevelBatch[] = [];
     let picoIds: string[] = [];
 
     for (const eci of this.children) {
@@ -264,7 +264,7 @@ export class Pico {
     return Object.freeze(data);
   }
 
-  toDbPut(): AbstractBatch {
+  toDbPut(): LevelBatch {
     return {
       type: "put",
       key: ["pico", this.id],
@@ -276,7 +276,7 @@ export class Pico {
     };
   }
 
-  toDbDel(): AbstractBatch {
+  toDbDel(): LevelBatch {
     return { type: "del", key: ["pico", this.id] };
   }
 
@@ -337,7 +337,7 @@ export class Pico {
     rid: string,
     version: string,
     config: RulesetConfig = {}
-  ): Promise<{ instance: RulesetInstance; dbPut: AbstractBatch }> {
+  ): Promise<{ instance: RulesetInstance; dbPut: LevelBatch }> {
     const rs = this.pf.getRuleset(rid, version);
 
     // even if we already have that rid installed, we need to init again
@@ -364,7 +364,7 @@ export class Pico {
     delete this.rulesets[rid];
   }
 
-  private uninstallBase(rid: string): AbstractBatch {
+  private uninstallBase(rid: string): LevelBatch {
     return {
       type: "del",
       key: ["pico-ruleset", this.id, rid]
