@@ -10,11 +10,13 @@ import { PicoEvent } from "./PicoEvent";
 import { PicoFramework, PicoFrameworkConf } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { Ruleset, RulesetConfig, RulesetInstance } from "./Ruleset";
+import { RulesetContext } from "./RulesetContext";
 
 export {
   PicoEvent,
   PicoQuery,
   PicoFramework,
+  RulesetContext,
   PicoFrameworkConf,
   ChannelConfig,
   RulesetInstance,

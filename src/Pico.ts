@@ -184,7 +184,7 @@ export class Pico {
     this.channels[parentChannel.id] = parentChannel;
     this.pf.addPico(child);
 
-    return child;
+    return childChannel.id;
   }
 
   async delPico(eci: string) {

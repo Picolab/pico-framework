@@ -17,7 +17,7 @@ export interface RulesetContext {
   eventQuery(event: PicoEvent, query: PicoQuery): Promise<any>;
   query(query: PicoQuery): Promise<any>;
 
-  newPico(conf?: NewPicoConfig): Promise<PicoReadOnly>;
+  newPico(conf?: NewPicoConfig): Promise<string>;
   delPico(eci: string): Promise<void>;
 
   newChannel(conf?: ChannelConfig): Promise<ChannelReadOnly>;
@@ -63,9 +63,8 @@ export function createRulesetContext(
     pico() {
       return pico.toReadOnly();
     },
-    async newPico(conf) {
-      const child = await pico.newPico(conf);
-      return child.toReadOnly();
+    newPico(conf) {
+      return pico.newPico(conf);
     },
     delPico(eci) {
       return pico.delPico(eci);

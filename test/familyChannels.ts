@@ -10,11 +10,10 @@ test("ctx.newChannel", async function(t) {
   ]);
 
   const pico = pf.rootPico;
-  const subPico = await pico.newPico({
+  const eciToChild = await pico.newPico({
     rulesets: [{ rid: "foo", version: "0.0.0" }]
   });
-
-  const eciToChild = pico.children[0];
+  const subPico = pf.getPico(eciToChild);
 
   function mkEv(eci: string): PicoEvent {
     return { eci, domain: "a", name: "b", data: { attrs: {} }, time: 0 };

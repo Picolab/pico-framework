@@ -156,6 +156,15 @@ export class PicoFramework {
     throw new Error(`ECI not found ${eci}`);
   }
 
+  getPico(eci: string): Pico {
+    for (const pico of this.picos) {
+      if (pico.channels[eci]) {
+        return pico;
+      }
+    }
+    throw new Error(`ECI not found ${eci}`);
+  }
+
   addRuleset(rs: Ruleset) {
     if (!this.rulesets[rs.rid]) {
       this.rulesets[rs.rid] = {};

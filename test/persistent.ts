@@ -29,12 +29,12 @@ test("persistent", async function(t) {
   let pf = await restart();
 
   let pico = pf.rootPico;
-  let pico0 = await pico.newPico();
-  let pico00 = await pico0.newPico();
-  let pico000 = await pico00.newPico();
-  let pico1 = await pico.newPico();
-  let pico10 = await pico1.newPico();
-  let pico11 = await pico1.newPico();
+  let pico0 = pf.getPico(await pico.newPico());
+  let pico00 = pf.getPico(await pico0.newPico());
+  let pico000 = pf.getPico(await pico00.newPico());
+  let pico1 = pf.getPico(await pico.newPico());
+  let pico10 = pf.getPico(await pico1.newPico());
+  let pico11 = pf.getPico(await pico1.newPico());
 
   await pico.install("one", "0.0.0", { one: "two" });
   await pico0.install("two", "0.0.0", { some: { thing: 22 } });

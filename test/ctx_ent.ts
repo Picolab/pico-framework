@@ -20,12 +20,13 @@ test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
 
   const pico = await pf.rootPico;
   pico.install("rid.other", "0.0.0");
-  const subPico = await pico.newPico({
+  const eciToChild = await pico.newPico({
     rulesets: [
       { rid: "rid.ctx", version: "0.0.0" },
       { rid: "rid.other", version: "0.0.0" }
     ]
   });
+  const subPico = pf.getPico(eciToChild);
 
   let err = await t.throwsAsync(pico.getEnt("rid.404", "var"));
   t.is(err + "", "Error: Not installed rid.404");

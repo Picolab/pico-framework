@@ -38,6 +38,7 @@
     "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   },
   "dependencies": {
+    "abstract-leveldown": "^6.0.1",
     "charwise": "^3.0.1",
     "cuid": "^2.1.6",
     "encoding-down": "^6.0.1",

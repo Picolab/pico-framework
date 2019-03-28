@@ -24,20 +24,7 @@ test("ctx.newPico", async function(t) {
     await event("newPico", [
       { rulesets: [{ rid: "rid.ctx", version: "0.0.0" }] }
     ]),
-    {
-      parent: "id5",
-      children: [],
-      channels: [
-        {
-          id: "id6",
-          tags: ["system", "child"],
-          eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },
-          queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] },
-          familyChannelPicoID: "id0"
-        }
-      ],
-      rulesets: [{ rid: "rid.ctx", version: "0.0.0", config: {} }]
-    }
+    "id6"
   );
 
   t.deepEqual(await query("pico"), {

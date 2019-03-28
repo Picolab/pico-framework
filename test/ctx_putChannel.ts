@@ -3,18 +3,23 @@ import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
 test("ctx.putChannel", async function(t) {
-  const { event } = await mkCtxTestEnv();
+  const { pf, event } = await mkCtxTestEnv();
 
-  let sub = await event("newPico", [
+  let subECI = await event("newPico", [
     { rulesets: [{ rid: "rid.ctx", version: "0.0.0" }] }
+  ]);
+
+  let sub = await await event("query", [
+    { eci: subECI, rid: "rid.ctx", name: "pico" }
   ]);
   t.deepEqual(sub.channels.map((c: any) => c.id), ["id5"]);
 
   sub = await event("eventQuery", [
-    { eci: "id5", domain: "ctx", name: "newChannel" },
-    { eci: "id5", rid: "rid.ctx", name: "pico" }
+    { eci: subECI, domain: "ctx", name: "newChannel" },
+    { eci: subECI, rid: "rid.ctx", name: "pico" }
   ]);
-  t.deepEqual(sub.channels.map((c: any) => c.id), ["id5", "id8"]);
+  t.deepEqual(sub.channels.map((c: any) => c.id), ["id10", "id5"]);
+  const otherChannel = "id10";
 
   let chann = await event("putChannel", [
     "id4",
@@ -31,9 +36,13 @@ test("ctx.putChannel", async function(t) {
   );
 
   let err = await t.throwsAsync(
-    event("putChannel", ["id8", { tags: ["new", "tags"] }])
+    event("putChannel", [otherChannel, { tags: ["new", "tags"] }])
   );
-  t.is(err + "", "Error: ECI not found id8", "cannot edit anothers channels");
+  t.is(
+    err + "",
+    `Error: ECI not found ${otherChannel}`,
+    "cannot edit anothers channels"
+  );
 
   function eventOnSub(name: string, args: any[] = []) {
     return event("eventQuery", [
@@ -42,17 +51,20 @@ test("ctx.putChannel", async function(t) {
     ]);
   }
 
-  chann = await eventOnSub("putChannel", ["id8", { tags: ["new", "tags"] }]);
+  chann = await eventOnSub("putChannel", [
+    otherChannel,
+    { tags: ["new", "tags"] }
+  ]);
   t.is(chann.tags.join(","), "new,tags");
   chann = await eventOnSub("putChannel", [
-    "id8",
+    otherChannel,
     { tags: ["changed", "again"] }
   ]);
   t.is(chann.tags.join(","), "changed,again");
 
   err = await t.throwsAsync(
     eventOnSub("putChannel", [
-      "id8",
+      otherChannel,
       { eventPolicy: { allow: [], deny: [{ not: "an", event: "rule" }] } }
     ])
   );
@@ -63,7 +75,7 @@ test("ctx.putChannel", async function(t) {
 
   err = await t.throwsAsync(
     eventOnSub("putChannel", [
-      "id8",
+      otherChannel,
       { queryPolicy: { allow: [], deny: [{ not: "a", query: "rule" }] } }
     ])
   );
@@ -72,33 +84,37 @@ test("ctx.putChannel", async function(t) {
     "TypeError: QueryPolicyRule expects {rid: string, name: string}"
   );
 
-  err = await t.throwsAsync(eventOnSub("putChannel", ["id8", { tags: "wat" }]));
-  t.is(
-    err + "",
-    "TypeError: Channel `tags` must be an array of non-empty strings."
+  err = await t.throwsAsync(
+    eventOnSub("putChannel", [otherChannel, { tags: "wat" }])
   );
-
-  err = await t.throwsAsync(eventOnSub("putChannel", ["id8", { tags: [1] }]));
   t.is(
     err + "",
     "TypeError: Channel `tags` must be an array of non-empty strings."
   );
 
   err = await t.throwsAsync(
-    eventOnSub("putChannel", ["id8", { tags: ["\t\n "] }])
+    eventOnSub("putChannel", [otherChannel, { tags: [1] }])
+  );
+  t.is(
+    err + "",
+    "TypeError: Channel `tags` must be an array of non-empty strings."
+  );
+
+  err = await t.throwsAsync(
+    eventOnSub("putChannel", [otherChannel, { tags: ["\t\n "] }])
   );
   t.is(err + "", "TypeError: Channel tag cannot be a blank string.");
 
   err = await t.throwsAsync(
-    eventOnSub("putChannel", ["id8", { tags: ["system"] }])
+    eventOnSub("putChannel", [otherChannel, { tags: ["system"] }])
   );
   t.is(err + "", 'TypeError: Cannot tag channel as "system".');
 
-  chann = await eventOnSub("putChannel", ["id8", { tags: [] }]);
+  chann = await eventOnSub("putChannel", [otherChannel, { tags: [] }]);
   t.is(chann.tags.join(","), "", "tags can be empty");
 
   chann = await eventOnSub("putChannel", [
-    "id8",
+    otherChannel,
     { tags: ["  Foo--bar_baz 123 ", " -- some-\t-- thing Else?\nI think."] }
   ]);
   t.is(
