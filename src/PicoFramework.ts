@@ -6,7 +6,7 @@ import { dbRange } from "./dbRange";
 import { Pico } from "./Pico";
 import { cleanEvent, PicoEvent } from "./PicoEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
-import { Ruleset } from "./Ruleset";
+import { Ruleset, RulesetConfig } from "./Ruleset";
 const charwise = require("charwise");
 const encode = require("encoding-down");
 const safeJsonCodec = require("level-json-coerce-null");
@@ -17,10 +17,19 @@ type RulesetLoader = (
   version: string
 ) => Promise<Ruleset | null | undefined>;
 
+type OnStartupRulesetInitError = (
+  pico: Pico,
+  rid: string,
+  version: string,
+  config: RulesetConfig,
+  error: any
+) => void | Promise<void>;
+
 export interface PicoFrameworkConf {
   leveldown?: AbstractLevelDOWN;
   genID?: () => string;
   rulesetLoader?: RulesetLoader;
+  onStartupRulesetInitError?: OnStartupRulesetInitError;
 }
 
 export class PicoFramework {
@@ -42,6 +51,8 @@ export class PicoFramework {
 
   private rulesetLoader?: RulesetLoader;
 
+  private onStartupRulesetInitError?: OnStartupRulesetInitError;
+
   constructor(conf?: PicoFrameworkConf) {
     this.db = level(
       encode((conf && conf.leveldown) || memdown(), {
@@ -52,6 +63,7 @@ export class PicoFramework {
     this.genID = (conf && conf.genID) || cuid;
     this.startupP = this.startup();
     this.rulesetLoader = conf && conf.rulesetLoader;
+    this.onStartupRulesetInitError = conf && conf.onStartupRulesetInitError;
   }
 
   private async startup() {
@@ -77,7 +89,21 @@ export class PicoFramework {
       if (!pico) {
         throw new Error(`Missing picoId ${picoId}`);
       }
-      await pico.install(rid, data.value.version, data.value.config);
+      try {
+        await pico.install(rid, data.value.version, data.value.config);
+      } catch (error) {
+        if (this.onStartupRulesetInitError) {
+          await this.onStartupRulesetInitError(
+            pico,
+            rid,
+            data.value.version,
+            data.value.config,
+            error
+          );
+        } else {
+          throw error;
+        }
+      }
     });
 
     let rootId: string | null;
