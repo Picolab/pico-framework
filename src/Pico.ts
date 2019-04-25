@@ -338,7 +338,7 @@ export class Pico {
     version: string,
     config: RulesetConfig = {}
   ): Promise<{ instance: RulesetInstance; dbPut: LevelBatch }> {
-    const rs = this.pf.getRuleset(rid, version);
+    const rs = await this.pf.getRuleset(rid, version);
 
     // even if we already have that rid installed, we need to init again
     // b/c the version or configuration may have changed

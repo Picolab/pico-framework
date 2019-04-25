@@ -12,9 +12,15 @@ const encode = require("encoding-down");
 const safeJsonCodec = require("level-json-coerce-null");
 const memdown = require("memdown");
 
+type RulesetLoader = (
+  rid: string,
+  version: string
+) => Promise<Ruleset | null | undefined>;
+
 export interface PicoFrameworkConf {
   leveldown?: AbstractLevelDOWN;
   genID?: () => string;
+  rulesetLoader?: RulesetLoader;
 }
 
 export class PicoFramework {
@@ -34,6 +40,8 @@ export class PicoFramework {
   private startupP: Promise<void>;
   genID: () => string;
 
+  private rulesetLoader?: RulesetLoader;
+
   constructor(conf?: PicoFrameworkConf) {
     this.db = level(
       encode((conf && conf.leveldown) || memdown(), {
@@ -43,6 +51,7 @@ export class PicoFramework {
     );
     this.genID = (conf && conf.genID) || cuid;
     this.startupP = this.startup();
+    this.rulesetLoader = conf && conf.rulesetLoader;
   }
 
   private async startup() {
@@ -172,7 +181,14 @@ export class PicoFramework {
     this.rulesets[rs.rid][rs.version] = rs;
   }
 
-  getRuleset(rid: string, version: string): Ruleset {
+  async getRuleset(rid: string, version: string): Promise<Ruleset> {
+    if (this.rulesetLoader) {
+      const rs = await this.rulesetLoader(rid, version);
+      if (rs) {
+        return rs;
+      }
+      // fallback on in-memory ruleset list
+    }
     if (!this.rulesets[rid]) {
       throw new Error(`Ruleset not found ${rid}@${version}`);
     }
