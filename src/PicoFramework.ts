@@ -234,6 +234,22 @@ export class PicoFramework {
     return list;
   }
 
+  async reInitRuleset(
+    rid: string,
+    version: string
+  ): Promise<{ pico: Pico; error: any }[]> {
+    const rs = await this.getRuleset(rid, version);
+    const errors: { pico: Pico; error: any }[] = [];
+    await Promise.all(
+      this.picos.map(pico =>
+        pico.reInitRuleset(rs).catch(error => {
+          errors.push({ pico, error });
+        })
+      )
+    );
+    return errors;
+  }
+
   /**
    * @ignore
    */

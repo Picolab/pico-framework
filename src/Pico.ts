@@ -3,7 +3,7 @@ import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
-import { RulesetConfig, RulesetInstance } from "./Ruleset";
+import { Ruleset, RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext } from "./RulesetContext";
 import { LevelBatch } from "./utils";
 
@@ -331,6 +331,17 @@ export class Pico {
     const { instance, dbPut } = await this.installBase(rid, version, config);
     await this.pf.db.batch([dbPut]);
     this.rulesets[rid] = { version, config, instance };
+  }
+
+  async reInitRuleset(rs: Ruleset) {
+    const rid = rs.rid;
+    const version = rs.version;
+    if (this.rulesets[rid] && this.rulesets[rid].version === version) {
+      const config = this.rulesets[rid].config;
+      const ctx = createRulesetContext(this.pf, this, { rid, version, config });
+      const instance = await rs.init(ctx);
+      this.rulesets[rid].instance = instance;
+    }
   }
 
   private async installBase(
