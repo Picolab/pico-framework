@@ -1,6 +1,5 @@
 import test from "ava";
-import { PicoFramework, Ruleset, RulesetConfig } from "../src";
-import { Pico } from "../src/Pico";
+import { PicoFramework, Ruleset } from "../src";
 const memdown = require("memdown");
 
 test("rulesetStartup", async function(t) {

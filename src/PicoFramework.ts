@@ -30,6 +30,7 @@ export interface PicoFrameworkConf {
   genID?: () => string;
   rulesetLoader?: RulesetLoader;
   onStartupRulesetInitError?: OnStartupRulesetInitError;
+  environment?: any;
 }
 
 export class PicoFramework {
@@ -53,6 +54,8 @@ export class PicoFramework {
 
   private onStartupRulesetInitError?: OnStartupRulesetInitError;
 
+  readonly environment?: any;
+
   constructor(conf?: PicoFrameworkConf) {
     this.db = level(
       encode((conf && conf.leveldown) || memdown(), {
@@ -64,6 +67,7 @@ export class PicoFramework {
     this.startupP = this.startup();
     this.rulesetLoader = conf && conf.rulesetLoader;
     this.onStartupRulesetInitError = conf && conf.onStartupRulesetInitError;
+    this.environment = conf && conf.environment;
   }
 
   private async startup() {

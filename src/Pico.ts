@@ -339,7 +339,7 @@ export class Pico {
     if (this.rulesets[rid] && this.rulesets[rid].version === version) {
       const config = this.rulesets[rid].config;
       const ctx = createRulesetContext(this.pf, this, { rid, version, config });
-      const instance = await rs.init(ctx);
+      const instance = await rs.init(ctx, this.pf.environment);
       this.rulesets[rid].instance = instance;
     }
   }
@@ -354,7 +354,7 @@ export class Pico {
     // even if we already have that rid installed, we need to init again
     // b/c the version or configuration may have changed
     const ctx = createRulesetContext(this.pf, this, { rid, version, config });
-    const instance = await rs.init(ctx);
+    const instance = await rs.init(ctx, this.pf.environment);
 
     return {
       instance,
