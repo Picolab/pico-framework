@@ -20,11 +20,14 @@ export class PicoQueue {
   private txnWaiters: {
     [id: string]: { resolve: (data: any) => void; reject: (err: any) => void };
   } = {};
+  private isWorking = false;
+
+  private currentTxn: PicoTxn | undefined;
 
   constructor(private worker: (txn: PicoTxn) => Promise<any>) {}
 
   push(txn: PicoTxn) {
-    this.txnLog.push(txn);
+    this.txnLog.push(Object.freeze(txn));
     setTimeout(() => this.doWork(), 0);
   }
 
@@ -34,14 +37,18 @@ export class PicoQueue {
     });
   }
 
-  private isWorking = false;
+  getCurrentTxn(): PicoTxn | undefined {
+    return this.currentTxn;
+  }
+
   private async doWork() {
     if (this.isWorking) {
       return;
     }
     this.isWorking = true;
-    let txn;
-    while ((txn = this.txnLog.shift())) {
+
+    while ((this.currentTxn = this.txnLog.shift())) {
+      let txn = this.currentTxn;
       let data;
       let error;
       try {
@@ -60,5 +67,6 @@ export class PicoQueue {
     }
     this.txnWaiters = {};
     this.isWorking = false;
+    this.currentTxn = undefined;
   }
 }

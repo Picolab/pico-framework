@@ -115,6 +115,10 @@ export class Pico {
     return this.queue.waitFor(eid);
   }
 
+  getCurrentTxn(): PicoTxn | undefined {
+    return this.queue.getCurrentTxn();
+  }
+
   async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf, this.pf.genID());
     const parentChannel = this.newChannelBase(
