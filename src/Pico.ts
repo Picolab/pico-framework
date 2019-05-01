@@ -132,8 +132,9 @@ export class Pico {
       kind: "query",
       query
     });
+    const p = this.waitFor(eid);
     setTimeout(() => this.doWork(), 0);
-    return this.waitFor(eid);
+    return p;
   }
 
   async newPico(conf?: NewPicoConfig) {
