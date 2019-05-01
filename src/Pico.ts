@@ -6,19 +6,7 @@ import { PicoQuery } from "./PicoQuery";
 import { Ruleset, RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext } from "./RulesetContext";
 import { LevelBatch } from "./utils";
-
-interface PicoTxn_base {
-  id: string;
-}
-interface PicoTxn_event extends PicoTxn_base {
-  kind: "event";
-  event: PicoEvent;
-}
-interface PicoTxn_query extends PicoTxn_base {
-  kind: "query";
-  query: PicoQuery;
-}
-type PicoTxn = PicoTxn_event | PicoTxn_query;
+import { PicoQueue, PicoTxn } from "./PicoQueue";
 
 export interface PicoReadOnly {
   /**
@@ -72,11 +60,7 @@ export class Pico {
     };
   } = {};
 
-  // TODO use flumelog-offset or similar
-  private txnLog: PicoTxn[] = [];
-  private txnWaiters: {
-    [id: string]: { resolve: (data: any) => void; reject: (err: any) => void };
-  } = {};
+  private queue = new PicoQueue(this.doTxn.bind(this));
 
   constructor(private pf: PicoFramework, id: string) {
     this.id = id;
@@ -84,57 +68,51 @@ export class Pico {
 
   async event(event: PicoEvent): Promise<string> {
     const eid = this.pf.genID();
-    this.txnLog.push({
+    this.queue.push({
       id: eid,
       kind: "event",
       event
     });
-    setTimeout(() => this.doWork(), 0);
     return eid;
   }
 
-  async eventWait(event: PicoEvent): Promise<any> {
+  eventWait(event: PicoEvent): Promise<any> {
     const eid = this.pf.genID();
-    this.txnLog.push({
+    this.queue.push({
       id: eid,
       kind: "event",
       event
     });
-    const p = this.waitFor(eid);
-    setTimeout(() => this.doWork(), 0);
-    return p;
+    return this.queue.waitFor(eid);
   }
 
   async eventQuery(event: PicoEvent, query: PicoQuery): Promise<any> {
     const eid = this.pf.genID();
-    this.txnLog.push({
+    this.queue.push({
       id: eid,
       kind: "event",
       event
     });
     const eidQ = eid + ".q";
-    this.txnLog.push({
+    this.queue.push({
       id: eidQ,
       kind: "query",
       query
     });
-    const p0 = this.waitFor(eid);
-    const p1 = this.waitFor(eidQ);
-    setTimeout(() => this.doWork(), 0);
+    const p0 = this.queue.waitFor(eid);
+    const p1 = this.queue.waitFor(eidQ);
     await p0; // this may throwup
     return p1;
   }
 
   async query(query: PicoQuery): Promise<any> {
     const eid = this.pf.genID();
-    this.txnLog.push({
+    this.queue.push({
       id: eid,
       kind: "query",
       query
     });
-    const p = this.waitFor(eid);
-    setTimeout(() => this.doWork(), 0);
-    return p;
+    return this.queue.waitFor(eid);
   }
 
   async newPico(conf?: NewPicoConfig) {
@@ -412,40 +390,6 @@ export class Pico {
     await this.pf.db.del(["entvar", this.id, rid, name]);
   }
 
-  waitFor(id: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.txnWaiters[id] = { resolve, reject };
-    });
-  }
-
-  private isWorking = false;
-  private async doWork() {
-    if (this.isWorking) {
-      return;
-    }
-    this.isWorking = true;
-    let txn;
-    while ((txn = this.txnLog.shift())) {
-      let data;
-      let error;
-      try {
-        data = await this.doTxn(txn);
-      } catch (err) {
-        error = err;
-      }
-      if (this.txnWaiters[txn.id]) {
-        if (error) {
-          this.txnWaiters[txn.id].reject(error);
-        } else {
-          this.txnWaiters[txn.id].resolve(data);
-        }
-        delete this.txnWaiters[txn.id];
-      }
-    }
-    this.txnWaiters = {};
-    this.isWorking = false;
-  }
-
   private schedule: PicoEvent[] = [];
 
   raiseEvent(domain: string, name: string, data: PicoEventPayload) {
@@ -467,7 +411,7 @@ export class Pico {
         while ((event = this.schedule.shift())) {
           for (const rs of Object.values(this.rulesets)) {
             if (rs.instance.event) {
-              // must process one event at a time to maintain pico single-threadedness
+              // must process one event at a time to maintain the pico's single-threaded guarantee
               await rs.instance.event(event);
             }
           }
