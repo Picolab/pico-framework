@@ -65,6 +65,7 @@ test("persistent", async function(t) {
   t.is(pf.numberOfPicos(), 1);
 
   t.deepEqual(await jsonDumpPico(pf, pf.rootPico), {
+    id: "id0",
     parent: null,
     children: [],
     channels: [],
@@ -75,6 +76,7 @@ test("persistent", async function(t) {
   pf = await restart();
 
   t.deepEqual(await jsonDumpPico(pf, pf.rootPico), {
+    id: "id0",
     parent: null,
     children: [],
     channels: [],

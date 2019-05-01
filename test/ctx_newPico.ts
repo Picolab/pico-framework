@@ -6,6 +6,7 @@ test("ctx.newPico", async function(t) {
   const { event, query } = await mkCtxTestEnv();
 
   t.deepEqual(await query("pico"), {
+    id: "id0",
     parent: null,
     children: [],
     channels: [
@@ -28,6 +29,7 @@ test("ctx.newPico", async function(t) {
   );
 
   t.deepEqual(await query("pico"), {
+    id: "id0",
     parent: null,
     children: ["id6"],
     channels: [

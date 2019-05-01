@@ -1,5 +1,6 @@
 import { PicoEvent } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
+import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 
 export interface PicoTxn_base {
   id: string;
@@ -24,10 +25,20 @@ export class PicoQueue {
 
   private currentTxn: PicoTxn | undefined;
 
-  constructor(private worker: (txn: PicoTxn) => Promise<any>) {}
+  constructor(
+    private picoId: string,
+    private worker: (txn: PicoTxn) => Promise<any>,
+    private emit: (txn: PicoFrameworkEvent) => void
+  ) {}
 
   push(txn: PicoTxn) {
-    this.txnLog.push(Object.freeze(txn));
+    Object.freeze(txn);
+    this.txnLog.push(txn);
+    this.emit({
+      type: "txnQueued",
+      picoId: this.picoId,
+      txn
+    });
     setTimeout(() => this.doWork(), 0);
   }
 
@@ -51,11 +62,35 @@ export class PicoQueue {
       let txn = this.currentTxn;
       let data;
       let error;
+
+      this.emit({
+        type: "txnStart",
+        picoId: this.picoId,
+        txn
+      });
+
       try {
         data = await this.worker(txn);
       } catch (err) {
         error = err;
       }
+
+      if (error) {
+        this.emit({
+          type: "txnError",
+          picoId: this.picoId,
+          txn,
+          error
+        });
+      } else {
+        this.emit({
+          type: "txnDone",
+          picoId: this.picoId,
+          txn,
+          data
+        });
+      }
+
       if (this.txnWaiters[txn.id]) {
         if (error) {
           this.txnWaiters[txn.id].reject(error);

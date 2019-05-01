@@ -7,8 +7,14 @@ import { Ruleset, RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext } from "./RulesetContext";
 import { LevelBatch } from "./utils";
 import { PicoQueue, PicoTxn } from "./PicoQueue";
+import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 
 export interface PicoReadOnly {
+  /**
+   * The pico's id, used to correlate framework events.
+   */
+  id: string;
+
   /**
    * The pico's parent ECI
    * This is null for the root pico.
@@ -60,10 +66,16 @@ export class Pico {
     };
   } = {};
 
-  private queue = new PicoQueue(this.doTxn.bind(this));
+  private queue: PicoQueue;
 
   constructor(private pf: PicoFramework, id: string) {
     this.id = id;
+
+    this.queue = new PicoQueue(
+      this.id,
+      this.doTxn.bind(this),
+      (ev: PicoFrameworkEvent) => this.pf.emit(ev)
+    );
   }
 
   async event(event: PicoEvent): Promise<string> {
@@ -232,6 +244,7 @@ export class Pico {
 
   toReadOnly(): PicoReadOnly {
     const data: PicoReadOnly = {
+      id: this.id,
       parent: this.parent,
       children: this.children.slice(0),
       channels: Object.values(this.channels).map(c => c.toReadOnly()),

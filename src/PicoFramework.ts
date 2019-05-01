@@ -5,6 +5,7 @@ import { Channel } from "./Channel";
 import { dbRange } from "./dbRange";
 import { Pico } from "./Pico";
 import { cleanEvent, PicoEvent } from "./PicoEvent";
+import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
 import { Ruleset, RulesetConfig } from "./Ruleset";
 const charwise = require("charwise");
@@ -25,12 +26,15 @@ type OnStartupRulesetInitError = (
   error: any
 ) => void | Promise<void>;
 
+type OnFrameworkEvent = (event: PicoFrameworkEvent) => void;
+
 export interface PicoFrameworkConf {
   leveldown?: AbstractLevelDOWN;
   genID?: () => string;
   rulesetLoader?: RulesetLoader;
   onStartupRulesetInitError?: OnStartupRulesetInitError;
   environment?: any;
+  onFrameworkEvent?: OnFrameworkEvent;
 }
 
 export class PicoFramework {
@@ -56,6 +60,11 @@ export class PicoFramework {
 
   readonly environment?: any;
 
+  /**
+   * not using EventEmitter b/c I want it typed checked and limited.
+   */
+  private onFrameworkEvent?: OnFrameworkEvent;
+
   constructor(conf?: PicoFrameworkConf) {
     this.db = level(
       encode((conf && conf.leveldown) || memdown(), {
@@ -64,13 +73,17 @@ export class PicoFramework {
       })
     );
     this.genID = (conf && conf.genID) || cuid;
-    this.startupP = this.startup();
     this.rulesetLoader = conf && conf.rulesetLoader;
     this.onStartupRulesetInitError = conf && conf.onStartupRulesetInitError;
     this.environment = conf && conf.environment;
+    this.onFrameworkEvent = conf && conf.onFrameworkEvent;
+
+    this.startupP = this.startup();
   }
 
   private async startup() {
+    this.emit({ type: "startup" });
+
     await dbRange(this.db, { prefix: ["pico"] }, data => {
       const pico = Pico.fromDb(this, data.value);
       this.picos.push(pico);
@@ -134,6 +147,8 @@ export class PicoFramework {
       this.rootPico_ = pico;
       this.picos.push(pico);
     }
+
+    this.emit({ type: "startupDone" });
   }
 
   start() {
@@ -256,6 +271,16 @@ export class PicoFramework {
 
   /**
    * @ignore
+   *
+   * NOTE: not using EventEmitter so we can have type information and it can be synchronous
+   */
+  emit(event: PicoFrameworkEvent) {
+    if (!this.onFrameworkEvent) return;
+    this.onFrameworkEvent(event);
+  }
+
+  /**
+   * @ignore
    */
   addPico(pico: Pico) {
     this.picos.push(pico);
@@ -270,7 +295,7 @@ export class PicoFramework {
 
   /**
    * Return the number of pico's
-   * Usefull for testing
+   * Useful for testing
    */
   numberOfPicos() {
     return this.picos.length;
