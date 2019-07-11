@@ -35,6 +35,7 @@ export interface PicoFrameworkConf {
   onStartupRulesetInitError?: OnStartupRulesetInitError;
   environment?: any;
   onFrameworkEvent?: OnFrameworkEvent;
+  useEventInputTime?: boolean;
 }
 
 export class PicoFramework {
@@ -60,6 +61,8 @@ export class PicoFramework {
 
   readonly environment?: any;
 
+  private useEventInputTime: boolean = false;
+
   /**
    * not using EventEmitter b/c I want it typed checked and limited.
    */
@@ -77,6 +80,7 @@ export class PicoFramework {
     this.onStartupRulesetInitError = conf && conf.onStartupRulesetInitError;
     this.environment = conf && conf.environment;
     this.onFrameworkEvent = conf && conf.onFrameworkEvent;
+    this.useEventInputTime = !!(conf && conf.useEventInputTime);
 
     this.startupP = this.startup();
   }
@@ -155,8 +159,15 @@ export class PicoFramework {
     return this.startupP;
   }
 
+  cleanEvent(event: PicoEvent): PicoEvent {
+    if (this.useEventInputTime) {
+      return cleanEvent(event, event.time);
+    }
+    return cleanEvent(event);
+  }
+
   async event(event: PicoEvent, fromPicoId?: string): Promise<string | any> {
-    event = cleanEvent(event);
+    event = this.cleanEvent(event);
 
     const channel = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
@@ -168,7 +179,7 @@ export class PicoFramework {
     event: PicoEvent,
     fromPicoId?: string
   ): Promise<string | any> {
-    event = cleanEvent(event);
+    event = this.cleanEvent(event);
 
     const channel = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
@@ -181,7 +192,7 @@ export class PicoFramework {
     query: PicoQuery,
     fromPicoId?: string
   ): Promise<any> {
-    event = cleanEvent(event);
+    event = this.cleanEvent(event);
     query = cleanQuery(query);
     if (query.eci !== event.eci) {
       throw new Error("eventQuery must use the same channel");
