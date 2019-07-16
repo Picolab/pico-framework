@@ -45,7 +45,7 @@
     "levelup": "^4.1.0",
     "lodash": "^4.17.14",
     "memdown": "^4.1.0",
-    "select-when": "^0.1.1"
+    "select-when": "^0.1.4"
   },
   "devDependencies": {
     "@types/abstract-leveldown": "^5.0.1",

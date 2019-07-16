@@ -131,6 +131,10 @@ export class Pico {
     return this.queue.getCurrentTxn();
   }
 
+  waitFor(txnId: string): Promise<any> {
+    return this.queue.waitFor(txnId);
+  }
+
   async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf, this.pf.genID());
     const parentChannel = this.newChannelBase(
@@ -429,7 +433,7 @@ export class Pico {
           for (const rs of Object.values(this.rulesets)) {
             if (rs.instance.event) {
               // must process one event at a time to maintain the pico's single-threaded guarantee
-              await rs.instance.event(event);
+              await rs.instance.event(event, txn.id);
             }
           }
         }
@@ -447,7 +451,7 @@ export class Pico {
             }"`
           );
         }
-        const data = await qfn(txn.query.args);
+        const data = await qfn(txn.query.args, txn.id);
         return data;
     }
   }

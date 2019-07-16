@@ -15,9 +15,9 @@ export interface RulesetConfig {
 }
 
 export interface RulesetInstance {
-  event?(event: PicoEvent): Promise<void> | void;
+  event?(event: PicoEvent, eid: string): Promise<void> | void;
 
   query?: {
-    [name: string]: (args: { [key: string]: any }) => any;
+    [name: string]: (args: { [key: string]: any }, qid: string) => any;
   };
 }
