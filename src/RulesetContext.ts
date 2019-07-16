@@ -36,6 +36,7 @@ export interface RulesetContext {
     name: string,
     attrs: PicoEventPayload["attrs"]
   ): void;
+  clearSchedule(): void;
 }
 
 /**
@@ -108,6 +109,10 @@ export function createRulesetContext(
 
     raiseEvent(domain, name, attrs) {
       return pico.raiseEvent(domain, name, attrs);
+    },
+
+    clearSchedule() {
+      pico.clearSchedule();
     }
   };
 }

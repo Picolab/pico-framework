@@ -423,6 +423,10 @@ export class Pico {
     });
   }
 
+  clearSchedule() {
+    this.schedule = [];
+  }
+
   private async doTxn(txn: PicoTxn): Promise<any> {
     switch (txn.kind) {
       case "event":
