@@ -49,6 +49,14 @@ test("PicoFrameworkEvent", async function(t) {
 
   t.deepEqual(log, [
     { type: "txnStart", picoId: "id0", txn },
-    { type: "txnDone", picoId: "id0", txn, data: undefined }
+    {
+      type: "txnDone",
+      picoId: "id0",
+      txn,
+      data: {
+        eid: "id2",
+        responses: []
+      }
+    }
   ]);
 });

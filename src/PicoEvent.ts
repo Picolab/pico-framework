@@ -7,6 +7,10 @@ export interface PicoEventPayload {
 
 export interface PicoEvent extends Event<PicoEventPayload> {
   eci: string;
+  domain: string;
+  name: string;
+  data: PicoEventPayload;
+  time: number;
 }
 
 /**

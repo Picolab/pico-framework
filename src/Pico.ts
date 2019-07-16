@@ -413,12 +413,12 @@ export class Pico {
 
   private schedule: PicoEvent[] = [];
 
-  raiseEvent(domain: string, name: string, data: PicoEventPayload) {
+  raiseEvent(domain: string, name: string, attrs: PicoEventPayload["attrs"]) {
     this.schedule.push({
       eci: "[raise]",
       domain,
       name,
-      data,
+      data: { attrs },
       time: Date.now()
     });
   }
@@ -428,16 +428,19 @@ export class Pico {
       case "event":
         this.schedule = []; // reset schedule every new event
         this.schedule.push(txn.event);
+        const eid = txn.id;
+        const responses: any[] = [];
         let event: PicoEvent | undefined;
         while ((event = this.schedule.shift())) {
           for (const rs of Object.values(this.rulesets)) {
             if (rs.instance.event) {
               // must process one event at a time to maintain the pico's single-threaded guarantee
-              await rs.instance.event(event, txn.id);
+              const response = await rs.instance.event(event, eid);
+              responses.push(response);
             }
           }
         }
-        return;
+        return { eid, responses };
       case "query":
         const rs = this.rulesets[txn.query.rid];
         if (!rs) {

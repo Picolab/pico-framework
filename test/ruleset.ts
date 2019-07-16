@@ -1,7 +1,7 @@
 import test from "ava";
 import { PicoFramework } from "../src";
 
-test("ruleset", async function(t) {
+test("ruleset - eid, qid", async function(t) {
   let log: any[] = [];
 
   let nextId = 0;
@@ -68,4 +68,42 @@ test("ruleset", async function(t) {
       args: { bbb: 2 }
     }
   ]);
+});
+
+test("ruleset - responses", async function(t) {
+  const pf = new PicoFramework();
+  pf.addRuleset({
+    rid: "rid.A",
+    version: "0.0.0",
+    init(ctx, env) {
+      return {
+        event(event, eid) {
+          const aaa = event.data.attrs.aaa;
+          if (aaa < 3) {
+            ctx.raiseEvent("a", "b", { aaa: aaa + 1 });
+          }
+          return aaa;
+        }
+      };
+    }
+  });
+  await pf.start();
+  const pico = await pf.rootPico;
+  await pico.install("rid.A", "0.0.0", {});
+  const eci = (await pico.newChannel()).id;
+
+  const eid = await pico.event({
+    eci,
+    domain: "a",
+    name: "b",
+    data: { attrs: { aaa: 1 } },
+    time: 0
+  });
+
+  const data = await pico.waitFor(eid);
+
+  t.deepEqual(data, {
+    eid,
+    responses: [1, 2, 3]
+  });
 });

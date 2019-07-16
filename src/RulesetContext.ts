@@ -31,7 +31,11 @@ export interface RulesetContext {
   putEnt(name: string, value: any): Promise<void>;
   delEnt(name: string): Promise<void>;
 
-  raiseEvent(domain: string, name: string, data: PicoEventPayload): void;
+  raiseEvent(
+    domain: string,
+    name: string,
+    attrs: PicoEventPayload["attrs"]
+  ): void;
 }
 
 /**
@@ -102,8 +106,8 @@ export function createRulesetContext(
       return pico.delEnt(rid, name);
     },
 
-    raiseEvent(domain, name, data) {
-      return pico.raiseEvent(domain, name, data);
+    raiseEvent(domain, name, attrs) {
+      return pico.raiseEvent(domain, name, attrs);
     }
   };
 }
