@@ -2,12 +2,12 @@ import * as _ from "lodash";
 import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
+import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 import { PicoQuery } from "./PicoQuery";
+import { PicoQueue, PicoTxn } from "./PicoQueue";
 import { Ruleset, RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext } from "./RulesetContext";
 import { LevelBatch } from "./utils";
-import { PicoQueue, PicoTxn } from "./PicoQueue";
-import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 
 export interface PicoReadOnly {
   /**
@@ -411,37 +411,52 @@ export class Pico {
     await this.pf.db.del(["entvar", this.id, rid, name]);
   }
 
-  private schedule: PicoEvent[] = [];
+  private schedule: { rid: string; event: PicoEvent }[] = [];
 
-  raiseEvent(domain: string, name: string, attrs: PicoEventPayload["attrs"]) {
-    this.schedule.push({
+  raiseEvent(
+    domain: string,
+    name: string,
+    attrs: PicoEventPayload["attrs"],
+    forRid?: string
+  ) {
+    const event: PicoEvent = {
       eci: "[raise]",
       domain,
       name,
       data: { attrs },
       time: Date.now()
-    });
+    };
+    if (typeof forRid === "string") {
+      this.schedule.push({ rid: forRid, event });
+    } else {
+      this.addEventToSchedule(event);
+    }
   }
 
   clearSchedule() {
     this.schedule = [];
   }
 
+  private addEventToSchedule(event: PicoEvent) {
+    for (const rid of Object.keys(this.rulesets)) {
+      this.schedule.push({ rid, event });
+    }
+  }
+
   private async doTxn(txn: PicoTxn): Promise<any> {
     switch (txn.kind) {
       case "event":
         this.schedule = []; // reset schedule every new event
-        this.schedule.push(txn.event);
+        this.addEventToSchedule(txn.event);
         const eid = txn.id;
         const responses: any[] = [];
-        let event: PicoEvent | undefined;
-        while ((event = this.schedule.shift())) {
-          for (const rs of Object.values(this.rulesets)) {
-            if (rs.instance.event) {
-              // must process one event at a time to maintain the pico's single-threaded guarantee
-              const response = await rs.instance.event(event, eid);
-              responses.push(response);
-            }
+        let current: { rid: string; event: PicoEvent } | undefined;
+        while ((current = this.schedule.shift())) {
+          const rs = this.rulesets[current.rid];
+          if (rs && rs.instance.event) {
+            // must process one event at a time to maintain the pico's single-threaded guarantee
+            const response = await rs.instance.event(current.event, eid);
+            responses.push(response);
           }
         }
         return { eid, responses };

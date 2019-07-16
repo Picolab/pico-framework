@@ -60,3 +60,107 @@ test("raiseEvent", async function(t) {
 
   t.is(history.join("|"), "doing raise|got the raise");
 });
+
+test("raiseEvent - forRid", async function(t) {
+  let history: string[] = [];
+
+  const pf = new PicoFramework();
+  await pf.start();
+  pf.addRuleset({
+    rid: "rid.A",
+    version: "0.0.0",
+    init(ctx) {
+      return {
+        event(event) {
+          const dt = `${event.domain}:${event.name}`;
+          switch (dt) {
+            case "do:raise":
+              history.push("doing raise");
+              ctx.raiseEvent("got", "raise", {}, event.data.attrs.forRid);
+              break;
+            default:
+              history.push("rid.A - " + dt);
+              break;
+          }
+        }
+      };
+    }
+  });
+  pf.addRuleset({
+    rid: "rid.A",
+    version: "0.0.0",
+    init(ctx) {
+      return {
+        event(event) {
+          history.push(`rid.A - ${event.domain}:${event.name}`);
+          switch (`${event.domain}:${event.name}`) {
+            case "do:raise":
+              ctx.raiseEvent("got", "raise", {}, event.data.attrs.forRid);
+          }
+        }
+      };
+    }
+  });
+  pf.addRuleset({
+    rid: "rid.B",
+    version: "0.0.0",
+    init(ctx) {
+      return {
+        event(event) {
+          history.push(`rid.B - ${event.domain}:${event.name}`);
+        }
+      };
+    }
+  });
+  const pico = pf.rootPico;
+  await pico.install("rid.A", "0.0.0");
+  await pico.install("rid.B", "0.0.0");
+  const eci = (await pico.newChannel()).id;
+
+  await pf.eventWait({ eci, domain: "aaa", name: "aaa" } as any);
+  t.deepEqual(history, ["rid.A - aaa:aaa", "rid.B - aaa:aaa"]);
+  history = [];
+
+  await pf.eventWait({ eci, domain: "do", name: "raise" } as any);
+  t.deepEqual(history, [
+    "rid.A - do:raise",
+    "rid.B - do:raise",
+    "rid.A - got:raise",
+    "rid.B - got:raise"
+  ]);
+  history = [];
+
+  await pf.eventWait({
+    eci,
+    domain: "do",
+    name: "raise",
+    data: { attrs: { forRid: "rid.A" } }
+  } as any);
+  t.deepEqual(history, [
+    "rid.A - do:raise",
+    "rid.B - do:raise",
+    "rid.A - got:raise"
+  ]);
+  history = [];
+
+  await pf.eventWait({
+    eci,
+    domain: "do",
+    name: "raise",
+    data: { attrs: { forRid: "rid.B" } }
+  } as any);
+  t.deepEqual(history, [
+    "rid.A - do:raise",
+    "rid.B - do:raise",
+    "rid.B - got:raise"
+  ]);
+  history = [];
+
+  await pf.eventWait({
+    eci,
+    domain: "do",
+    name: "raise",
+    data: { attrs: { forRid: "404" } }
+  } as any);
+  t.deepEqual(history, ["rid.A - do:raise", "rid.B - do:raise"]);
+});

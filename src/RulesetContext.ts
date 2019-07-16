@@ -34,7 +34,8 @@ export interface RulesetContext {
   raiseEvent(
     domain: string,
     name: string,
-    attrs: PicoEventPayload["attrs"]
+    attrs: PicoEventPayload["attrs"],
+    forRid?: string
   ): void;
   clearSchedule(): void;
 }
@@ -107,8 +108,8 @@ export function createRulesetContext(
       return pico.delEnt(rid, name);
     },
 
-    raiseEvent(domain, name, attrs) {
-      return pico.raiseEvent(domain, name, attrs);
+    raiseEvent(domain, name, attrs, forRid) {
+      return pico.raiseEvent(domain, name, attrs, forRid);
     },
 
     clearSchedule() {
