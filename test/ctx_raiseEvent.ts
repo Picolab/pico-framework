@@ -1,4 +1,3 @@
-import * as _ from "lodash";
 import test from "ava";
 import { PicoFramework } from "../src";
 
@@ -59,6 +58,64 @@ test("raiseEvent", async function(t) {
   );
 
   t.is(history.join("|"), "doing raise|got the raise");
+});
+
+test("raiseEvent should use cleanEvent", async function(t) {
+  const history: any[] = [];
+  let ctx: any;
+
+  const pf = new PicoFramework();
+  await pf.start();
+  pf.addRuleset({
+    rid: "rid.raise",
+    version: "0.0.0",
+    init($ctx) {
+      ctx = $ctx;
+      return {
+        event(event) {
+          switch (`${event.domain}:${event.name}`) {
+            case "no:domain":
+              history.push("" + t.throws(() => ctx.raiseEvent()));
+              break;
+            case "no:name":
+              history.push("" + t.throws(() => ctx.raiseEvent("foo")));
+              break;
+            case "no:attrs":
+              ctx.raiseEvent("foo", "bar");
+              break;
+            default:
+              history.push(
+                `${event.eci}/${event.domain}:${event.name}?${JSON.stringify(
+                  event.data.attrs
+                )}`
+              );
+          }
+        }
+      };
+    }
+  });
+  const pico = pf.rootPico;
+  const eci = (await pico.newChannel()).id;
+  await pico.install("rid.raise", "0.0.0");
+
+  function signal(domain: string, name: string) {
+    return pf.eventWait({ eci, domain, name } as any);
+  }
+
+  t.deepEqual(history, []);
+  await signal("no", "domain");
+  t.deepEqual(history, ["Error: missing event.domain"]);
+  await signal("no", "name");
+  t.deepEqual(history, [
+    "Error: missing event.domain",
+    "Error: missing event.name"
+  ]);
+  await signal("no", "attrs");
+  t.deepEqual(history, [
+    "Error: missing event.domain",
+    "Error: missing event.name",
+    eci + "/foo:bar?{}"
+  ]);
 });
 
 test("raiseEvent - forRid", async function(t) {

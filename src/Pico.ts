@@ -1,6 +1,6 @@
 import * as _ from "lodash";
 import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
-import { PicoEvent, PicoEventPayload } from "./PicoEvent";
+import { cleanEvent, PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
 import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 import { PicoQuery } from "./PicoQuery";
@@ -412,6 +412,7 @@ export class Pico {
   }
 
   private schedule: { rid: string; event: PicoEvent }[] = [];
+  private current: { rid: string; event: PicoEvent } | undefined;
 
   raiseEvent(
     domain: string,
@@ -419,13 +420,12 @@ export class Pico {
     attrs: PicoEventPayload["attrs"],
     forRid?: string
   ) {
-    const event: PicoEvent = {
-      eci: "[raise]",
+    const event = cleanEvent({
+      eci: (this.current && this.current.event.eci) || "[raise]",
       domain,
       name,
-      data: { attrs },
-      time: Date.now()
-    };
+      data: { attrs }
+    });
     if (typeof forRid === "string") {
       this.schedule.push({ rid: forRid, event });
     } else {
@@ -450,14 +450,17 @@ export class Pico {
         this.addEventToSchedule(txn.event);
         const eid = txn.id;
         const responses: any[] = [];
-        let current: { rid: string; event: PicoEvent } | undefined;
-        while ((current = this.schedule.shift())) {
-          const rs = this.rulesets[current.rid];
-          if (rs && rs.instance.event) {
-            // must process one event at a time to maintain the pico's single-threaded guarantee
-            const response = await rs.instance.event(current.event, eid);
-            responses.push(response);
+        try {
+          while ((this.current = this.schedule.shift())) {
+            const rs = this.rulesets[this.current.rid];
+            if (rs && rs.instance.event) {
+              // must process one event at a time to maintain the pico's single-threaded guarantee
+              const response = await rs.instance.event(this.current.event, eid);
+              responses.push(response);
+            }
           }
+        } finally {
+          this.current = undefined;
         }
         return { eid, responses };
       case "query":
