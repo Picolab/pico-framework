@@ -41,6 +41,11 @@ export function cleanEvent(
     // only if it's a map do we consider it valid
     if (json && json[0] === "{") {
       attrs = JSON.parse(json);
+    } else if (
+      eventOrig.data.attrs === null ||
+      eventOrig.data.attrs === undefined
+    ) {
+      // default to {}
     } else {
       throw new Error("Expected a JSON map for event.data.attrs");
     }

@@ -64,6 +64,44 @@ test("event = cleanEvent(event)", function(t) {
     }
   );
 
+  // attrs can be null or undefined
+  t.deepEqual(
+    cleanEvent(
+      {
+        eci: "eci123",
+        domain: "foo",
+        name: "bar",
+        data: { attrs: null }
+      },
+      123
+    ),
+    {
+      eci: "eci123",
+      domain: "foo",
+      name: "bar",
+      data: { attrs: {} },
+      time: 123
+    }
+  );
+  t.deepEqual(
+    cleanEvent(
+      {
+        eci: "eci123",
+        domain: "foo",
+        name: "bar",
+        data: { attrs: undefined }
+      },
+      123
+    ),
+    {
+      eci: "eci123",
+      domain: "foo",
+      name: "bar",
+      data: { attrs: {} },
+      time: 123
+    }
+  );
+
   // attrs - should not be mutable
   const attrs = { what: { is: ["this"] } };
   const event = cleanEvent(
@@ -167,7 +205,10 @@ test("event = cleanEvent(event)", function(t) {
     return e.data && e.data.attrs;
   }
 
-  for (const val of [() => 1, null, 1, '{"one":1}', [1, 2]]) {
+  t.deepEqual(cleanAttrs(null), {}, "null attrs defaults to {}");
+  t.deepEqual(cleanAttrs(undefined), {}, "undefined attrs defaults to {}");
+
+  for (const val of [() => 1, 1, '{"one":1}', [1, 2]]) {
     t.throws(
       () => cleanAttrs(val),
       "Expected a JSON map for event.data.attrs",
