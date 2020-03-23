@@ -3,7 +3,7 @@ import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
 test("ctx.newPico", async function(t) {
-  const { event, query } = await mkCtxTestEnv();
+  const { pf, event, query, rsReg } = await mkCtxTestEnv();
 
   t.deepEqual(await query("pico"), {
     id: "id0",
@@ -22,16 +22,16 @@ test("ctx.newPico", async function(t) {
   });
 
   t.deepEqual(
-    await event("newPico", [
-      { rulesets: [{ rid: "rid.ctx", version: "0.0.0" }] }
-    ]),
-    "id6"
+    await pf.getPico("id1").newPico({
+      rulesets: [{ rs: rsReg.get("rid.ctx", "0.0.0") }]
+    }),
+    "id5"
   );
 
   t.deepEqual(await query("pico"), {
     id: "id0",
     parent: null,
-    children: ["id6"],
+    children: ["id5"],
     channels: [
       {
         id: "id1",
@@ -41,11 +41,11 @@ test("ctx.newPico", async function(t) {
         familyChannelPicoID: null
       },
       {
-        id: "id5",
+        id: "id4",
         tags: ["system", "parent"],
         eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },
         queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] },
-        familyChannelPicoID: "id4"
+        familyChannelPicoID: "id3"
       }
     ],
     rulesets: [{ rid: "rid.ctx", version: "0.0.0", config: {} }]

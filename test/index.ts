@@ -1,12 +1,14 @@
 import test from "ava";
 import { isCuid } from "cuid";
 import { PicoFramework } from "../src";
+import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
 test("hello world", async function(t) {
-  const pf = new PicoFramework();
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
 
-  pf.addRuleset({
+  rsReg.add({
     rid: "rid.hello",
     version: "0.0.0",
     init(ctx) {
@@ -32,7 +34,7 @@ test("hello world", async function(t) {
   });
 
   const pico = pf.rootPico;
-  await pico.install("rid.hello", "0.0.0");
+  await pico.install(rsReg.get("rid.hello", "0.0.0"));
   const eci = (await pico.newChannel()).id;
 
   t.is(
@@ -136,10 +138,11 @@ test("hello world", async function(t) {
 });
 
 test("pico can pass configuration to rulesets", async function(t) {
-  const pf = new PicoFramework();
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
 
-  pf.addRuleset({
+  rsReg.add({
     rid: "some.rid",
     version: "0.0.0",
     init(ctx) {
@@ -159,7 +162,7 @@ test("pico can pass configuration to rulesets", async function(t) {
   const pico = pf.rootPico;
   const eci = (await pico.newChannel()).id;
 
-  await pico.install("some.rid", "0.0.0");
+  await pico.install(rsReg.get("some.rid", "0.0.0"));
 
   t.deepEqual(
     await pf.query({
@@ -171,7 +174,7 @@ test("pico can pass configuration to rulesets", async function(t) {
     "default name"
   );
 
-  await pico.install("some.rid", "0.0.0", { name: "Ove" });
+  await pico.install(rsReg.get("some.rid", "0.0.0"), { name: "Ove" });
 
   t.deepEqual(
     await pf.query({
@@ -185,10 +188,11 @@ test("pico can pass configuration to rulesets", async function(t) {
 });
 
 test("check channel policies", async function(t) {
-  const pf = new PicoFramework();
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
 
-  pf.addRuleset({
+  rsReg.add({
     rid: "some.rid",
     version: "0.0.0",
     init(ctx) {
@@ -206,11 +210,13 @@ test("check channel policies", async function(t) {
     }
   });
   const pico = pf.rootPico;
-  await pico.install("some.rid", "0.0.0");
-  const eci = (await pico.newChannel({
-    eventPolicy: { allow: [{ domain: "*", name: "foo" }], deny: [] },
-    queryPolicy: { allow: [{ rid: "*", name: "foo" }], deny: [] }
-  })).id;
+  await pico.install(rsReg.get("some.rid", "0.0.0"));
+  const eci = (
+    await pico.newChannel({
+      eventPolicy: { allow: [{ domain: "*", name: "foo" }], deny: [] },
+      queryPolicy: { allow: [{ rid: "*", name: "foo" }], deny: [] }
+    })
+  ).id;
 
   async function doE(domain: string, name: string) {
     try {

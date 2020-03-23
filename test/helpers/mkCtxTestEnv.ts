@@ -2,7 +2,7 @@ import { ridCtx } from "./ridCtx";
 import { testPicoFramework } from "./testPicoFramework";
 
 export async function mkCtxTestEnv() {
-  const { pf, eci } = await testPicoFramework([ridCtx]);
+  const { pf, eci, rsReg, genID } = await testPicoFramework([ridCtx]);
 
   function event(name: string, args: any[] = []) {
     return pf.eventQuery(
@@ -26,5 +26,5 @@ export async function mkCtxTestEnv() {
     return pf.query({ eci, rid: "rid.ctx", name, args });
   }
 
-  return { pf, eci, event, query };
+  return { pf, eci, event, query, rsReg, genID };
 }

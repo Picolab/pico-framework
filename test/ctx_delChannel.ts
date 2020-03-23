@@ -3,22 +3,30 @@ import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
 test("ctx.delChannel", async function(t) {
-  const { event } = await mkCtxTestEnv();
+  const { pf, event, rsReg, genID } = await mkCtxTestEnv();
 
-  let subECI = await event("newPico", [
-    { rulesets: [{ rid: "rid.ctx", version: "0.0.0" }] }
-  ]);
-  let sub = await await event("query", [
+  genID();
+  let subECI = await pf
+    .getPico("id1")
+    .newPico({ rulesets: [{ rs: rsReg.get("rid.ctx", "0.0.0") }] });
+
+  let sub = await event("query", [
     { eci: subECI, rid: "rid.ctx", name: "pico" }
   ]);
-  t.deepEqual(sub.channels.map((c: any) => c.id), ["id5"]);
+  t.deepEqual(
+    sub.channels.map((c: any) => c.id),
+    ["id5"]
+  );
 
   sub = await event("eventQuery", [
     { eci: "id5", domain: "ctx", name: "newChannel" },
     { eci: "id5", rid: "rid.ctx", name: "pico" }
   ]);
 
-  t.deepEqual(sub.channels.map((c: any) => c.id), ["id10", "id5"]);
+  t.deepEqual(
+    sub.channels.map((c: any) => c.id),
+    ["id10", "id5"]
+  );
   const otherChannel = "id10";
 
   let err = await t.throwsAsync(event("delChannel", ["id4"]));
@@ -43,5 +51,8 @@ test("ctx.delChannel", async function(t) {
   t.is(err + "", `Error: ECI not found ${otherChannel}`);
 
   sub = await event("query", [{ eci: "id5", rid: "rid.ctx", name: "pico" }]);
-  t.deepEqual(sub.channels.map((c: any) => c.id), ["id5"]);
+  t.deepEqual(
+    sub.channels.map((c: any) => c.id),
+    ["id5"]
+  );
 });

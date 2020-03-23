@@ -3,22 +3,29 @@ import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
 test("ctx.putChannel", async function(t) {
-  const { pf, event } = await mkCtxTestEnv();
+  const { pf, event, rsReg, genID } = await mkCtxTestEnv();
 
-  let subECI = await event("newPico", [
-    { rulesets: [{ rid: "rid.ctx", version: "0.0.0" }] }
-  ]);
+  genID();
+  let subECI = await pf
+    .getPico("id1")
+    .newPico({ rulesets: [{ rs: rsReg.get("rid.ctx", "0.0.0") }] });
 
-  let sub = await await event("query", [
+  let sub = await event("query", [
     { eci: subECI, rid: "rid.ctx", name: "pico" }
   ]);
-  t.deepEqual(sub.channels.map((c: any) => c.id), ["id5"]);
+  t.deepEqual(
+    sub.channels.map((c: any) => c.id),
+    ["id5"]
+  );
 
   sub = await event("eventQuery", [
     { eci: subECI, domain: "ctx", name: "newChannel" },
     { eci: subECI, rid: "rid.ctx", name: "pico" }
   ]);
-  t.deepEqual(sub.channels.map((c: any) => c.id), ["id10", "id5"]);
+  t.deepEqual(
+    sub.channels.map((c: any) => c.id),
+    ["id10", "id5"]
+  );
   const otherChannel = "id10";
 
   let chann = await event("putChannel", [

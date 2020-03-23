@@ -1,11 +1,14 @@
 import test from "ava";
 import { PicoFramework } from "../src";
+import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
 test("clearSchedule", async function(t) {
   let log: string[] = [];
 
-  const pf = new PicoFramework();
-  pf.addRuleset({
+  const rsReg = rulesetRegistry();
+
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  rsReg.add({
     rid: "rid.A",
     version: "0.0.0",
     init(ctx) {
@@ -19,7 +22,7 @@ test("clearSchedule", async function(t) {
       };
     }
   });
-  pf.addRuleset({
+  rsReg.add({
     rid: "rid.B",
     version: "0.0.0",
     init(ctx) {
@@ -32,8 +35,8 @@ test("clearSchedule", async function(t) {
   });
   await pf.start();
   const pico = pf.rootPico;
-  await pico.install("rid.A", "0.0.0", {});
-  await pico.install("rid.B", "0.0.0", {});
+  await pico.install(rsReg.get("rid.A", "0.0.0"), {});
+  await pico.install(rsReg.get("rid.B", "0.0.0"), {});
   const eci = (await pico.newChannel()).id;
 
   t.deepEqual(log, []);

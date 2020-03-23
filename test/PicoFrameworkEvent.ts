@@ -1,13 +1,16 @@
 import test from "ava";
 import { PicoFramework } from "../src";
 import { PicoFrameworkEvent } from "../src/PicoFrameworkEvent";
+import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
 test("PicoFrameworkEvent", async function(t) {
   let log: PicoFrameworkEvent[] = [];
 
   let nextId = 0;
 
+  const rsReg = rulesetRegistry();
   const pf = new PicoFramework({
+    rulesetLoader: rsReg.loader,
     genID() {
       return `id${nextId++}`;
     },

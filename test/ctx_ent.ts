@@ -1,9 +1,8 @@
-import * as _ from "lodash";
 import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
 test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
-  const { pf, eci, event, query } = await mkCtxTestEnv();
+  const { pf, event, rsReg } = await mkCtxTestEnv();
 
   t.is(await event("getEnt", ["foo"]), null);
   t.is(await event("putEnt", ["foo", "bar"]), undefined);
@@ -12,18 +11,18 @@ test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
   t.is(await event("delEnt", ["foo"]), undefined, "ok to delete again");
   t.is(await event("getEnt", ["foo"]), null);
 
-  pf.addRuleset({
+  rsReg.add({
     rid: "rid.other",
     version: "0.0.0",
     init: () => ({})
   });
 
   const pico = await pf.rootPico;
-  pico.install("rid.other", "0.0.0");
+  pico.install(rsReg.get("rid.other", "0.0.0"));
   const eciToChild = await pico.newPico({
     rulesets: [
-      { rid: "rid.ctx", version: "0.0.0" },
-      { rid: "rid.other", version: "0.0.0" }
+      { rs: rsReg.get("rid.ctx", "0.0.0") },
+      { rs: rsReg.get("rid.other", "0.0.0") }
     ]
   });
   const subPico = pf.getPico(eciToChild);

@@ -7,7 +7,11 @@ import {
   QueryPolicyRule
 } from "./Channel";
 import { PicoEvent } from "./PicoEvent";
-import { PicoFramework, PicoFrameworkConf } from "./PicoFramework";
+import {
+  PicoFramework,
+  PicoFrameworkConf,
+  RulesetLoader
+} from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { Ruleset, RulesetConfig, RulesetInstance } from "./Ruleset";
 import { RulesetContext } from "./RulesetContext";
@@ -15,6 +19,7 @@ import { RulesetContext } from "./RulesetContext";
 export {
   PicoEvent,
   PicoQuery,
+  RulesetLoader,
   PicoFramework,
   RulesetContext,
   PicoFrameworkConf,

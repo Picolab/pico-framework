@@ -4,10 +4,13 @@ import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 import { getAllECIsFromDB } from "./helpers/inspect";
 
 test("ctx.delPico", async function(t) {
-  const { pf, event, query } = await mkCtxTestEnv();
-  await event("newPico", [
-    { rulesets: [{ rid: "rid.ctx", version: "0.0.0" }] }
-  ]);
+  const { pf, event, query, rsReg, genID } = await mkCtxTestEnv();
+
+  genID();
+  await pf
+    .getPico("id1")
+    .newPico({ rulesets: [{ rs: rsReg.get("rid.ctx", "0.0.0") }] });
+
   let me = await query("pico");
   t.deepEqual(me.children, ["id5"]);
 

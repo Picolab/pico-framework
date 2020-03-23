@@ -1,5 +1,6 @@
 import { PicoFramework } from "../../src";
 import { Ruleset } from "../../src/Ruleset";
+import { rulesetRegistry } from "./rulesetRegistry";
 
 export async function testPicoFramework(rootRulesets: Ruleset[]) {
   let nextId = 0;
@@ -7,17 +8,18 @@ export async function testPicoFramework(rootRulesets: Ruleset[]) {
     return `id${nextId++}`;
   }
 
-  const pf = new PicoFramework({ genID });
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader, genID });
   await pf.start();
 
   for (const rs of rootRulesets) {
-    pf.addRuleset(rs);
+    rsReg.add(rs);
   }
 
   const pico = await pf.rootPico;
   for (const rs of rootRulesets) {
-    await pico.install(rs.rid, rs.version);
+    await pico.install(rsReg.get(rs.rid, rs.version));
   }
   const eci = (await pico.newChannel()).id;
-  return { pf, eci };
+  return { pf, eci, rsReg, genID };
 }

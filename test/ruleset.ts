@@ -1,5 +1,6 @@
 import test from "ava";
 import { PicoFramework } from "../src";
+import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
 test("ruleset - eid, qid", async function(t) {
   let log: any[] = [];
@@ -9,8 +10,9 @@ test("ruleset - eid, qid", async function(t) {
     return `id${nextId++}`;
   }
 
-  const pf = new PicoFramework({ genID });
-  pf.addRuleset({
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader, genID });
+  rsReg.add({
     rid: "rid.A",
     version: "0.0.0",
     init(ctx, env) {
@@ -28,7 +30,7 @@ test("ruleset - eid, qid", async function(t) {
   });
   await pf.start();
   const pico = await pf.rootPico;
-  await pico.install("rid.A", "0.0.0", {});
+  await pico.install(rsReg.get("rid.A", "0.0.0"), {});
   const eci = (await pico.newChannel()).id;
 
   t.deepEqual(log, []);
@@ -71,8 +73,9 @@ test("ruleset - eid, qid", async function(t) {
 });
 
 test("ruleset - responses", async function(t) {
-  const pf = new PicoFramework();
-  pf.addRuleset({
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  rsReg.add({
     rid: "rid.A",
     version: "0.0.0",
     init(ctx, env) {
@@ -89,7 +92,7 @@ test("ruleset - responses", async function(t) {
   });
   await pf.start();
   const pico = await pf.rootPico;
-  await pico.install("rid.A", "0.0.0", {});
+  await pico.install(rsReg.get("rid.A", "0.0.0"), {});
   const eci = (await pico.newChannel()).id;
 
   const eid = await pico.event({

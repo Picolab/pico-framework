@@ -44,8 +44,7 @@ export interface PicoRulesetReadOnly {
 }
 
 export interface NewPicoRuleset {
-  rid: string;
-  version: string;
+  rs: Ruleset;
   config?: RulesetConfig;
 }
 
@@ -159,14 +158,10 @@ export class Pico {
 
     if (conf && conf.rulesets) {
       for (const rs of conf.rulesets) {
-        const { instance, dbPut } = await child.installBase(
-          rs.rid,
-          rs.version,
-          rs.config
-        );
+        const { instance, dbPut } = await child.installBase(rs.rs, rs.config);
         dbOps.push(dbPut);
-        child.rulesets[rs.rid] = {
-          version: rs.version,
+        child.rulesets[rs.rs.rid] = {
+          version: rs.rs.version,
           config: rs.config || {},
           instance
         };
@@ -327,10 +322,10 @@ export class Pico {
     delete this.channels[eci];
   }
 
-  async install(rid: string, version: string, config: RulesetConfig = {}) {
-    const { instance, dbPut } = await this.installBase(rid, version, config);
+  async install(rs: Ruleset, config: RulesetConfig = {}) {
+    const { instance, dbPut } = await this.installBase(rs, config);
     await this.pf.db.batch([dbPut]);
-    this.rulesets[rid] = { version, config, instance };
+    this.rulesets[rs.rid] = { version: rs.version, config, instance };
   }
 
   async reInitRuleset(rs: Ruleset) {
@@ -345,25 +340,26 @@ export class Pico {
   }
 
   private async installBase(
-    rid: string,
-    version: string,
+    rs: Ruleset,
     config: RulesetConfig = {}
   ): Promise<{ instance: RulesetInstance; dbPut: LevelBatch }> {
-    const rs = await this.pf.getRuleset(rid, version);
-
     // even if we already have that rid installed, we need to init again
     // b/c the version or configuration may have changed
-    const ctx = createRulesetContext(this.pf, this, { rid, version, config });
+    const ctx = createRulesetContext(this.pf, this, {
+      rid: rs.rid,
+      version: rs.version,
+      config
+    });
     const instance = await rs.init(ctx, this.pf.environment);
 
     return {
       instance,
       dbPut: {
         type: "put",
-        key: ["pico-ruleset", this.id, rid],
+        key: ["pico-ruleset", this.id, rs.rid],
         value: {
-          rid,
-          version,
+          rid: rs.rid,
+          version: rs.version,
           config
         }
       }
@@ -471,9 +467,7 @@ export class Pico {
         const qfn = rs.instance.query && rs.instance.query[txn.query.name];
         if (!qfn) {
           throw new Error(
-            `Ruleset ${txn.query.rid} does not have query function "${
-              txn.query.name
-            }"`
+            `Ruleset ${txn.query.rid} does not have query function "${txn.query.name}"`
           );
         }
         const data = await qfn(txn.query.args, txn.id);

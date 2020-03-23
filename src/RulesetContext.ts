@@ -3,7 +3,7 @@ import { ChannelConfig, ChannelReadOnly } from "./Channel";
 import { NewPicoConfig, Pico, PicoReadOnly, PicoRulesetReadOnly } from "./Pico";
 import { PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
-import { RulesetConfig } from "./Ruleset";
+import { Ruleset, RulesetConfig } from "./Ruleset";
 
 /**
  * Give rulesets limited access to the framework/pico that it's running in.
@@ -24,7 +24,7 @@ export interface RulesetContext {
   putChannel(eci: string, conf: ChannelConfig): Promise<ChannelReadOnly>;
   delChannel(eci: string): Promise<void>;
 
-  install(rid: string, version: string, config: RulesetConfig): Promise<void>;
+  install(rs: Ruleset, config: RulesetConfig): Promise<void>;
   uninstall(rid: string): Promise<void>;
 
   getEnt(name: string): Promise<any>;
@@ -90,8 +90,8 @@ export function createRulesetContext(
       return pico.delChannel(eci);
     },
 
-    install(rid, version, config) {
-      return pico.install(rid, version, config);
+    install(rs, config) {
+      return pico.install(rs, config);
     },
 
     uninstall(rid) {

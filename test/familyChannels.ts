@@ -1,17 +1,16 @@
-import * as _ from "lodash";
 import test from "ava";
-import { testPicoFramework } from "./helpers/testPicoFramework";
 import { PicoEvent } from "../src/PicoEvent";
 import { PicoQuery } from "../src/PicoQuery";
+import { testPicoFramework } from "./helpers/testPicoFramework";
 
 test("ctx.newChannel", async function(t) {
-  const { pf } = await testPicoFramework([
+  const { pf, rsReg } = await testPicoFramework([
     { rid: "foo", version: "0.0.0", init: () => ({ query: { b() {} } }) }
   ]);
 
   const pico = pf.rootPico;
   const eciToChild = await pico.newPico({
-    rulesets: [{ rid: "foo", version: "0.0.0" }]
+    rulesets: [{ rs: rsReg.get("foo", "0.0.0") }]
   });
   const subPico = pf.getPico(eciToChild);
 

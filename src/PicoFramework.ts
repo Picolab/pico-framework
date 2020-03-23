@@ -13,26 +13,26 @@ const encode = require("encoding-down");
 const safeJsonCodec = require("level-json-coerce-null");
 const memdown = require("memdown");
 
-type RulesetLoader = (
+export type RulesetLoader = (
+  picoId: string,
   rid: string,
   version: string
-) => Promise<Ruleset | null | undefined>;
+) => Ruleset | Promise<Ruleset>;
 
-type OnStartupRulesetInitError = (
-  pico: Pico,
-  rid: string,
-  version: string,
+export type OnStartupRulesetInitError = (
+  picoId: string,
+  rs: Ruleset,
   config: RulesetConfig,
   error: any
-) => void | Promise<void>;
+) => void;
 
 type OnFrameworkEvent = (event: PicoFrameworkEvent) => void;
 
 export interface PicoFrameworkConf {
+  rulesetLoader: RulesetLoader;
+  onStartupRulesetInitError?: OnStartupRulesetInitError;
   leveldown?: AbstractLevelDOWN;
   genID?: () => string;
-  rulesetLoader?: RulesetLoader;
-  onStartupRulesetInitError?: OnStartupRulesetInitError;
   environment?: any;
   onFrameworkEvent?: OnFrameworkEvent;
   useEventInputTime?: boolean;
@@ -51,12 +51,10 @@ export class PicoFramework {
 
   private picos: Pico[] = [];
 
-  private rulesets: { [rid: string]: { [version: string]: Ruleset } } = {};
   private startupP: Promise<void>;
   genID: () => string;
 
-  private rulesetLoader?: RulesetLoader;
-
+  private rulesetLoader: RulesetLoader;
   private onStartupRulesetInitError?: OnStartupRulesetInitError;
 
   readonly environment?: any;
@@ -68,16 +66,16 @@ export class PicoFramework {
    */
   private onFrameworkEvent?: OnFrameworkEvent;
 
-  constructor(conf?: PicoFrameworkConf) {
+  constructor(conf: PicoFrameworkConf) {
     this.db = level(
       encode((conf && conf.leveldown) || memdown(), {
         keyEncoding: charwise,
         valueEncoding: safeJsonCodec
       })
     );
-    this.genID = (conf && conf.genID) || cuid;
     this.rulesetLoader = conf && conf.rulesetLoader;
     this.onStartupRulesetInitError = conf && conf.onStartupRulesetInitError;
+    this.genID = (conf && conf.genID) || cuid;
     this.environment = conf && conf.environment;
     this.onFrameworkEvent = conf && conf.onFrameworkEvent;
     this.useEventInputTime = !!(conf && conf.useEventInputTime);
@@ -110,19 +108,14 @@ export class PicoFramework {
       if (!pico) {
         throw new Error(`Missing picoId ${picoId}`);
       }
+      const rs = await this.rulesetLoader(picoId, rid, data.value.version);
       try {
-        await pico.install(rid, data.value.version, data.value.config);
-      } catch (error) {
+        await pico.install(rs, data.value.config);
+      } catch (err) {
         if (this.onStartupRulesetInitError) {
-          await this.onStartupRulesetInitError(
-            pico,
-            rid,
-            data.value.version,
-            data.value.config,
-            error
-          );
+          this.onStartupRulesetInitError(picoId, rs, data.value.config, err);
         } else {
-          throw error;
+          throw err;
         }
       }
     });
@@ -228,56 +221,6 @@ export class PicoFramework {
       }
     }
     throw new Error(`ECI not found ${eci}`);
-  }
-
-  addRuleset(rs: Ruleset) {
-    if (!this.rulesets[rs.rid]) {
-      this.rulesets[rs.rid] = {};
-    }
-    this.rulesets[rs.rid][rs.version] = rs;
-  }
-
-  async getRuleset(rid: string, version: string): Promise<Ruleset> {
-    if (this.rulesetLoader) {
-      const rs = await this.rulesetLoader(rid, version);
-      if (rs) {
-        return rs;
-      }
-      // fallback on in-memory ruleset list
-    }
-    if (!this.rulesets[rid]) {
-      throw new Error(`Ruleset not found ${rid}@${version}`);
-    }
-    if (!this.rulesets[rid][version]) {
-      throw new Error(`Ruleset version not found ${rid}@${version}`);
-    }
-    return this.rulesets[rid][version];
-  }
-
-  listRulesets(): Ruleset[] {
-    const list: Ruleset[] = [];
-    for (const rid of Object.keys(this.rulesets)) {
-      for (const version of Object.keys(this.rulesets[rid])) {
-        list.push(this.rulesets[rid][version]);
-      }
-    }
-    return list;
-  }
-
-  async reInitRuleset(
-    rid: string,
-    version: string
-  ): Promise<{ pico: Pico; error: any }[]> {
-    const rs = await this.getRuleset(rid, version);
-    const errors: { pico: Pico; error: any }[] = [];
-    await Promise.all(
-      this.picos.map(pico =>
-        pico.reInitRuleset(rs).catch(error => {
-          errors.push({ pico, error });
-        })
-      )
-    );
-    return errors;
   }
 
   /**

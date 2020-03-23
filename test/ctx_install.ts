@@ -1,14 +1,13 @@
-import * as _ from "lodash";
 import test from "ava";
-import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 import { RulesetInstance } from "../src/Ruleset";
+import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
 test("ctx.install", async function(t) {
-  const { pf, eci, event } = await mkCtxTestEnv();
+  const { pf, eci, rsReg } = await mkCtxTestEnv();
 
   let history: string[] = [];
 
-  pf.addRuleset({
+  rsReg.add({
     rid: "foo.bar",
     version: "0.0.0",
     init() {
@@ -24,7 +23,7 @@ test("ctx.install", async function(t) {
       };
     }
   });
-  pf.addRuleset({
+  rsReg.add({
     rid: "foo.bar",
     version: "1.1.1",
     async init(): Promise<RulesetInstance> {
@@ -50,16 +49,7 @@ test("ctx.install", async function(t) {
   });
   t.deepEqual(history, []);
 
-  let err = await t.throwsAsync(event("install", []));
-  t.is(err + "", "Error: Ruleset not found undefined@undefined");
-
-  err = await t.throwsAsync(event("install", ["foo", "0.0.0"]));
-  t.is(err + "", "Error: Ruleset not found foo@0.0.0");
-
-  err = await t.throwsAsync(event("install", ["foo.bar", "1.0.0"]));
-  t.is(err + "", "Error: Ruleset version not found foo.bar@1.0.0");
-
-  let resp = await event("install", ["foo.bar", "0.0.0"]);
+  let resp = await pf.rootPico.install(rsReg.get("foo.bar", "0.0.0"));
   t.is(resp, undefined);
 
   await pf.eventWait({
@@ -75,7 +65,7 @@ test("ctx.install", async function(t) {
     "zero zero zero"
   );
 
-  resp = await event("install", ["foo.bar", "1.1.1"]);
+  resp = await pf.rootPico.install(rsReg.get("foo.bar", "1.1.1"));
   t.is(resp, undefined);
   history = [];
 

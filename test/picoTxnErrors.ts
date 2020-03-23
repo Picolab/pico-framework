@@ -1,9 +1,11 @@
 import test from "ava";
-import { PicoFramework, Ruleset } from "../src";
+import { PicoFramework } from "../src";
+import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
 test("query error", async function(t) {
-  const pf = new PicoFramework();
-  pf.addRuleset({
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  rsReg.add({
     rid: "rid.A",
     version: "draft",
     init(ctx) {
@@ -18,7 +20,7 @@ test("query error", async function(t) {
   });
   await pf.start();
   const pico = await pf.rootPico;
-  await pico.install("rid.A", "draft");
+  await pico.install(rsReg.get("rid.A", "draft"));
 
   const channel = await pico.newChannel({
     eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },

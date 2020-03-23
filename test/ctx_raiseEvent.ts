@@ -1,11 +1,13 @@
 import test from "ava";
 import { PicoFramework } from "../src";
+import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
 test("raiseEvent", async function(t) {
-  const pf = new PicoFramework();
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
 
-  pf.addRuleset({
+  rsReg.add({
     rid: "rid.raise",
     version: "0.0.0",
     init(ctx) {
@@ -31,7 +33,7 @@ test("raiseEvent", async function(t) {
 
   const pico = pf.rootPico;
   const eci = (await pico.newChannel()).id;
-  await pico.install("rid.raise", "0.0.0");
+  await pico.install(rsReg.get("rid.raise", "0.0.0"));
 
   let history = await pf.query({
     eci,
@@ -63,10 +65,10 @@ test("raiseEvent", async function(t) {
 test("raiseEvent should use cleanEvent", async function(t) {
   const history: any[] = [];
   let ctx: any;
-
-  const pf = new PicoFramework();
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
-  pf.addRuleset({
+  rsReg.add({
     rid: "rid.raise",
     version: "0.0.0",
     init($ctx) {
@@ -96,7 +98,7 @@ test("raiseEvent should use cleanEvent", async function(t) {
   });
   const pico = pf.rootPico;
   const eci = (await pico.newChannel()).id;
-  await pico.install("rid.raise", "0.0.0");
+  await pico.install(rsReg.get("rid.raise", "0.0.0"));
 
   function signal(domain: string, name: string) {
     return pf.eventWait({ eci, domain, name } as any);
@@ -121,9 +123,10 @@ test("raiseEvent should use cleanEvent", async function(t) {
 test("raiseEvent - forRid", async function(t) {
   let history: string[] = [];
 
-  const pf = new PicoFramework();
+  const rsReg = rulesetRegistry();
+  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
-  pf.addRuleset({
+  rsReg.add({
     rid: "rid.A",
     version: "0.0.0",
     init(ctx) {
@@ -143,7 +146,7 @@ test("raiseEvent - forRid", async function(t) {
       };
     }
   });
-  pf.addRuleset({
+  rsReg.add({
     rid: "rid.A",
     version: "0.0.0",
     init(ctx) {
@@ -158,7 +161,7 @@ test("raiseEvent - forRid", async function(t) {
       };
     }
   });
-  pf.addRuleset({
+  rsReg.add({
     rid: "rid.B",
     version: "0.0.0",
     init(ctx) {
@@ -170,8 +173,8 @@ test("raiseEvent - forRid", async function(t) {
     }
   });
   const pico = pf.rootPico;
-  await pico.install("rid.A", "0.0.0");
-  await pico.install("rid.B", "0.0.0");
+  await pico.install(rsReg.get("rid.A", "0.0.0"));
+  await pico.install(rsReg.get("rid.B", "0.0.0"));
   const eci = (await pico.newChannel()).id;
 
   await pf.eventWait({ eci, domain: "aaa", name: "aaa" } as any);
