@@ -39,26 +39,25 @@
   },
   "dependencies": {
     "charwise": "^3.0.1",
-    "cuid": "^2.1.6",
-    "encoding-down": "^6.1.0",
+    "cuid": "^2.1.8",
+    "encoding-down": "^6.3.0",
     "level-json-coerce-null": "^1.0.1",
-    "levelup": "^4.1.0",
+    "levelup": "^4.3.2",
     "lodash": "^4.17.14",
-    "memdown": "^4.1.0",
+    "memdown": "^5.1.0",
     "select-when": "^0.1.4"
   },
   "devDependencies": {
     "@types/abstract-leveldown": "^5.0.1",
-    "@types/levelup": "^3.1.1",
-    "@types/lodash": "^4.14.136",
-    "ava": "^2.2.0",
-    "codecov": "^3.5.0",
-    "nyc": "^14.1.1",
-    "ts-node": "^8.3.0",
-    "typescript": "^3.5.3"
+    "@types/levelup": "^4.3.0",
+    "@types/lodash": "^4.14.149",
+    "ava": "^3.5.1",
+    "codecov": "^3.6.5",
+    "nyc": "^15.0.0",
+    "ts-node": "^8.8.1",
+    "typescript": "^3.8.3"
   },
   "ava": {
-    "compileEnhancements": false,
     "extensions": [
       "ts"
     ],
@@ -66,10 +65,8 @@
       "ts-node/register"
     ],
     "files": [
-      "test/**/*"
-    ],
-    "helpers": [
-      "test/helpers/**/*"
+      "test/**/*",
+      "!test/helpers/**/*"
     ]
   },
   "nyc": {

@@ -13,10 +13,11 @@ test("policy = cleanEventPolicy(policy)", function(t) {
     },
     { allow: [], deny: [], extra: [] }
   ]) {
-    t.throws(
-      () => cleanEventPolicy(val),
-      "EventPolicy expects {allow: EventPolicyRule[], deny: EventPolicyRule[]}"
-    );
+    t.throws(() => cleanEventPolicy(val), {
+      instanceOf: TypeError,
+      message:
+        "EventPolicy expects {allow: EventPolicyRule[], deny: EventPolicyRule[]}"
+    });
   }
 
   let policy = cleanEventPolicy({ allow: [], deny: [] });
@@ -39,14 +40,14 @@ test("policy = cleanEventPolicy(policy)", function(t) {
     { name: "bye" },
     { domain: "hi", name: "bye", extra: "thing" }
   ]) {
-    t.throws(
-      () => cleanEventPolicy({ allow: [val], deny: [] }),
-      "EventPolicyRule expects {domain: string, name: string}"
-    );
-    t.throws(
-      () => cleanEventPolicy({ allow: [], deny: [val] }),
-      "EventPolicyRule expects {domain: string, name: string}"
-    );
+    t.throws(() => cleanEventPolicy({ allow: [val], deny: [] }), {
+      instanceOf: TypeError,
+      message: "EventPolicyRule expects {domain: string, name: string}"
+    });
+    t.throws(() => cleanEventPolicy({ allow: [], deny: [val] }), {
+      instanceOf: TypeError,
+      message: "EventPolicyRule expects {domain: string, name: string}"
+    });
   }
 });
 
@@ -62,10 +63,11 @@ test("policy = cleanQueryPolicy(policy)", function(t) {
     },
     { allow: [], deny: [], extra: [] }
   ]) {
-    t.throws(
-      () => cleanQueryPolicy(val),
-      "QueryPolicy expects {allow: QueryPolicyRule[], deny: QueryPolicyRule[]}"
-    );
+    t.throws(() => cleanQueryPolicy(val), {
+      instanceOf: TypeError,
+      message:
+        "QueryPolicy expects {allow: QueryPolicyRule[], deny: QueryPolicyRule[]}"
+    });
   }
 
   let policy = cleanQueryPolicy({ allow: [], deny: [] });
@@ -88,13 +90,13 @@ test("policy = cleanQueryPolicy(policy)", function(t) {
     { name: "bye" },
     { rid: "hi", name: "bye", extra: "thing" }
   ]) {
-    t.throws(
-      () => cleanQueryPolicy({ allow: [val], deny: [] }),
-      "QueryPolicyRule expects {rid: string, name: string}"
-    );
-    t.throws(
-      () => cleanQueryPolicy({ allow: [], deny: [val] }),
-      "QueryPolicyRule expects {rid: string, name: string}"
-    );
+    t.throws(() => cleanQueryPolicy({ allow: [val], deny: [] }), {
+      instanceOf: TypeError,
+      message: "QueryPolicyRule expects {rid: string, name: string}"
+    });
+    t.throws(() => cleanQueryPolicy({ allow: [], deny: [val] }), {
+      instanceOf: TypeError,
+      message: "QueryPolicyRule expects {rid: string, name: string}"
+    });
   }
 });

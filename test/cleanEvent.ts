@@ -211,7 +211,10 @@ test("event = cleanEvent(event)", function(t) {
   for (const val of [() => 1, 1, '{"one":1}', [1, 2]]) {
     t.throws(
       () => cleanAttrs(val),
-      "Expected a JSON map for event.data.attrs",
+      {
+        instanceOf: Error,
+        message: "Expected a JSON map for event.data.attrs"
+      },
       JSON.stringify(val) + " should fail"
     );
   }

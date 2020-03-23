@@ -138,7 +138,7 @@ test("query = cleanQuery(query)", function(t) {
   for (const val of [() => 1, null, 1, '{"one":1}', [1, 2]]) {
     t.throws(
       () => cleanArgs(val),
-      "Expected a JSON map for query.args",
+      { instanceOf: Error, message: "Expected a JSON map for query.args" },
       JSON.stringify(val) + " should fail"
     );
   }
