@@ -367,7 +367,7 @@ export class Pico {
   }
 
   async uninstall(rid: string) {
-    await this.pf.db.del(["pico-ruleset", this.id, rid]);
+    await this.pf.db.batch([this.uninstallBase(rid)]);
     delete this.rulesets[rid];
   }
 

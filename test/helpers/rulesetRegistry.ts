@@ -22,7 +22,8 @@ export function rulesetRegistry() {
   const loader: RulesetLoader = (
     picoId: string,
     rid: string,
-    version: string
+    version: string,
+    config: any
   ) => {
     return get(rid, version);
   };

@@ -37,9 +37,9 @@ test("rulesetStartup", async function(t) {
   pf = new PicoFramework({
     rulesetLoader: rsReg.loader,
     leveldown: down,
-    onStartupRulesetInitError(picoId, rs, config, error) {
+    onStartupRulesetInitError(picoId, rid, version, config, error) {
       swallowedErrors.push(
-        rs.rid + "@" + rs.version + JSON.stringify(config) + error
+        rid + "@" + version + JSON.stringify(config) + error
       );
     }
   });
