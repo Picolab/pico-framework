@@ -59,7 +59,7 @@ export class Channel {
       this.familyChannelPicoID = familyChannelPicoID;
     } else {
       if (conf && conf.tags) {
-        this.tags = cleanTags(conf.tags);
+        this.tags = cleanChannelTags(conf.tags);
       }
       // if not a family channel, use policies
       if (conf && conf.eventPolicy) {
@@ -77,7 +77,7 @@ export class Channel {
       return;
     }
     if (conf.tags) {
-      this.tags = cleanTags(conf.tags);
+      this.tags = cleanChannelTags(conf.tags);
     }
     if (conf.eventPolicy) {
       this.eventPolicy = cleanEventPolicy(conf.eventPolicy);
@@ -292,7 +292,7 @@ function cleanQueryPolicyRule(orig: any): QueryPolicyRule {
   };
 }
 
-function cleanTags(tags: any): string[] {
+export function cleanChannelTags(tags: any): string[] {
   if (!Array.isArray(tags)) {
     throw new TypeError(
       "Channel `tags` must be an array of non-empty strings."

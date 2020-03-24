@@ -1,6 +1,7 @@
 import {
   ChannelConfig,
   ChannelReadOnly,
+  cleanChannelTags,
   EventPolicy,
   EventPolicyRule,
   QueryPolicy,
@@ -31,5 +32,6 @@ export {
   EventPolicy,
   EventPolicyRule,
   QueryPolicy,
-  QueryPolicyRule
+  QueryPolicyRule,
+  cleanChannelTags
 };
