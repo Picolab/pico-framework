@@ -2,7 +2,7 @@ import * as _ from "lodash";
 import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
-test("ctx.putChannel", async function(t) {
+test("ctx.putChannel", async function (t) {
   const { pf, event, rsReg, genID } = await mkCtxTestEnv();
 
   genID();
@@ -11,20 +11,20 @@ test("ctx.putChannel", async function(t) {
     .newPico({ rulesets: [{ rs: rsReg.get("rid.ctx", "0.0.0") }] });
 
   let sub = await event("query", [
-    { eci: subECI, rid: "rid.ctx", name: "pico" }
+    { eci: subECI, rid: "rid.ctx", name: "pico" },
   ]);
   t.deepEqual(
     sub.channels.map((c: any) => c.id),
-    ["id5"]
+    ["id3", "id5"]
   );
 
   sub = await event("eventQuery", [
     { eci: subECI, domain: "ctx", name: "newChannel" },
-    { eci: subECI, rid: "rid.ctx", name: "pico" }
+    { eci: subECI, rid: "rid.ctx", name: "pico" },
   ]);
   t.deepEqual(
     sub.channels.map((c: any) => c.id),
-    ["id10", "id5"]
+    ["id10", "id3", "id5"]
   );
   const otherChannel = "id10";
 
@@ -33,8 +33,8 @@ test("ctx.putChannel", async function(t) {
     {
       tags: ["try-to-change", null],
       eventPolicy: { not: "checked" },
-      queryPolicy: { not: "checked" }
-    }
+      queryPolicy: { not: "checked" },
+    },
   ]);
   t.deepEqual(
     chann.tags,
@@ -54,25 +54,25 @@ test("ctx.putChannel", async function(t) {
   function eventOnSub(name: string, args: any[] = []) {
     return event("eventQuery", [
       { eci: "id5", domain: "ctx", name, data: { attrs: { args } } },
-      { eci: "id5", rid: "rid.ctx", name: "_lastResult" }
+      { eci: "id5", rid: "rid.ctx", name: "_lastResult" },
     ]);
   }
 
   chann = await eventOnSub("putChannel", [
     otherChannel,
-    { tags: ["new", "tags"] }
+    { tags: ["new", "tags"] },
   ]);
   t.is(chann.tags.join(","), "new,tags");
   chann = await eventOnSub("putChannel", [
     otherChannel,
-    { tags: ["changed", "again"] }
+    { tags: ["changed", "again"] },
   ]);
   t.is(chann.tags.join(","), "changed,again");
 
   err = await t.throwsAsync(
     eventOnSub("putChannel", [
       otherChannel,
-      { eventPolicy: { allow: [], deny: [{ not: "an", event: "rule" }] } }
+      { eventPolicy: { allow: [], deny: [{ not: "an", event: "rule" }] } },
     ])
   );
   t.is(
@@ -83,7 +83,7 @@ test("ctx.putChannel", async function(t) {
   err = await t.throwsAsync(
     eventOnSub("putChannel", [
       otherChannel,
-      { queryPolicy: { allow: [], deny: [{ not: "a", query: "rule" }] } }
+      { queryPolicy: { allow: [], deny: [{ not: "a", query: "rule" }] } },
     ])
   );
   t.is(
@@ -122,7 +122,7 @@ test("ctx.putChannel", async function(t) {
 
   chann = await eventOnSub("putChannel", [
     otherChannel,
-    { tags: ["  Foo--bar_baz 123 ", " -- some-\t-- thing Else?\nI think."] }
+    { tags: ["  Foo--bar_baz 123 ", " -- some-\t-- thing Else?\nI think."] },
   ]);
   t.is(
     chann.tags.join(","),

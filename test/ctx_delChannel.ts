@@ -2,7 +2,7 @@ import * as _ from "lodash";
 import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
-test("ctx.delChannel", async function(t) {
+test("ctx.delChannel", async function (t) {
   const { pf, event, rsReg, genID } = await mkCtxTestEnv();
 
   genID();
@@ -11,21 +11,21 @@ test("ctx.delChannel", async function(t) {
     .newPico({ rulesets: [{ rs: rsReg.get("rid.ctx", "0.0.0") }] });
 
   let sub = await event("query", [
-    { eci: subECI, rid: "rid.ctx", name: "pico" }
+    { eci: subECI, rid: "rid.ctx", name: "pico" },
   ]);
   t.deepEqual(
     sub.channels.map((c: any) => c.id),
-    ["id5"]
+    ["id3", "id5"]
   );
 
   sub = await event("eventQuery", [
     { eci: "id5", domain: "ctx", name: "newChannel" },
-    { eci: "id5", rid: "rid.ctx", name: "pico" }
+    { eci: "id5", rid: "rid.ctx", name: "pico" },
   ]);
 
   t.deepEqual(
     sub.channels.map((c: any) => c.id),
-    ["id10", "id5"]
+    ["id10", "id3", "id5"]
   );
   const otherChannel = "id10";
 
@@ -38,7 +38,7 @@ test("ctx.delChannel", async function(t) {
   function eventOnSub(name: string, args: any[] = []) {
     return event("eventQuery", [
       { eci: "id5", domain: "ctx", name, data: { attrs: { args } } },
-      { eci: "id5", rid: "rid.ctx", name: "_lastResult" }
+      { eci: "id5", rid: "rid.ctx", name: "_lastResult" },
     ]);
   }
 
@@ -53,6 +53,6 @@ test("ctx.delChannel", async function(t) {
   sub = await event("query", [{ eci: "id5", rid: "rid.ctx", name: "pico" }]);
   t.deepEqual(
     sub.channels.map((c: any) => c.id),
-    ["id5"]
+    ["id3", "id5"]
   );
 });

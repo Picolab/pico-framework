@@ -12,6 +12,7 @@ import { LevelBatch } from "./utils";
 export interface PicoReadOnly {
   /**
    * The pico's id, used to correlate framework events.
+   * This is also an ECI only the pico can use to talk to itself i.e. scheduled events
    */
   id: string;
 
@@ -69,6 +70,7 @@ export class Pico {
 
   constructor(private pf: PicoFramework, id: string) {
     this.id = id;
+    this.channels[id] = new Channel(this, id, { tags: ["system", "self"] }, id);
 
     this.queue = new PicoQueue(
       this.id,
@@ -82,7 +84,7 @@ export class Pico {
     this.queue.push({
       id: eid,
       kind: "event",
-      event
+      event,
     });
     return eid;
   }
@@ -92,7 +94,7 @@ export class Pico {
     this.queue.push({
       id: eid,
       kind: "event",
-      event
+      event,
     });
     return this.queue.waitFor(eid);
   }
@@ -102,13 +104,13 @@ export class Pico {
     this.queue.push({
       id: eid,
       kind: "event",
-      event
+      event,
     });
     const eidQ = eid + ".q";
     this.queue.push({
       id: eidQ,
       kind: "query",
-      query
+      query,
     });
     const p0 = this.queue.waitFor(eid);
     const p1 = this.queue.waitFor(eidQ);
@@ -121,7 +123,7 @@ export class Pico {
     this.queue.push({
       id: eid,
       kind: "query",
-      query
+      query,
     });
     return this.queue.waitFor(eid);
   }
@@ -153,7 +155,7 @@ export class Pico {
       this.toDbPut(),
       child.toDbPut(),
       parentChannel.toDbPut(),
-      childChannel.toDbPut()
+      childChannel.toDbPut(),
     ];
 
     if (conf && conf.rulesets) {
@@ -163,7 +165,7 @@ export class Pico {
         child.rulesets[rs.rs.rid] = {
           version: rs.rs.version,
           config: rs.config || {},
-          instance
+          instance,
         };
       }
     }
@@ -171,7 +173,7 @@ export class Pico {
     try {
       await this.pf.db.batch(dbOps);
     } catch (err) {
-      this.children = this.children.filter(c => c !== childChannel.id);
+      this.children = this.children.filter((c) => c !== childChannel.id);
       throw err;
     }
 
@@ -194,7 +196,7 @@ export class Pico {
       ops.push(this.channels[pico.parent].toDbDel());
     }
 
-    this.children = this.children.filter(c => c !== eci);
+    this.children = this.children.filter((c) => c !== eci);
     ops.push(this.toDbPut());
 
     try {
@@ -246,14 +248,14 @@ export class Pico {
       id: this.id,
       parent: this.parent,
       children: this.children.slice(0),
-      channels: Object.values(this.channels).map(c => c.toReadOnly()),
-      rulesets: Object.keys(this.rulesets).map(rid => ({
+      channels: Object.values(this.channels).map((c) => c.toReadOnly()),
+      rulesets: Object.keys(this.rulesets).map((rid) => ({
         rid,
         version: this.rulesets[rid].version,
-        config: this.rulesets[rid].config
-      }))
+        config: this.rulesets[rid].config,
+      })),
     };
-    data.channels = _.sortBy(data.channels, c => {
+    data.channels = _.sortBy(data.channels, (c) => {
       return c.id;
     });
     return Object.freeze(data);
@@ -266,8 +268,8 @@ export class Pico {
       value: {
         id: this.id,
         parent: this.parent,
-        children: this.children.slice(0)
-      }
+        children: this.children.slice(0),
+      },
     };
   }
 
@@ -304,6 +306,9 @@ export class Pico {
     const chann = this.channels[eci];
     if (!chann) {
       throw new Error(`ECI not found ${eci}`);
+    }
+    if (chann.familyChannelPicoID == this.id) {
+      throw new Error("Cannot edit the self channel.");
     }
     chann.update(conf);
     await this.pf.db.batch([chann.toDbPut()]);
@@ -348,7 +353,7 @@ export class Pico {
     const ctx = createRulesetContext(this.pf, this, {
       rid: rs.rid,
       version: rs.version,
-      config
+      config,
     });
     const instance = await rs.init(ctx, this.pf.environment);
 
@@ -360,9 +365,9 @@ export class Pico {
         value: {
           rid: rs.rid,
           version: rs.version,
-          config
-        }
-      }
+          config,
+        },
+      },
     };
   }
 
@@ -374,7 +379,7 @@ export class Pico {
   private uninstallBase(rid: string): LevelBatch {
     return {
       type: "del",
-      key: ["pico-ruleset", this.id, rid]
+      key: ["pico-ruleset", this.id, rid],
     };
   }
 
@@ -420,7 +425,7 @@ export class Pico {
       eci: (this.current && this.current.event.eci) || "[raise]",
       domain,
       name,
-      data: { attrs }
+      data: { attrs },
     });
     if (typeof forRid === "string") {
       this.schedule.push({ rid: forRid, event });

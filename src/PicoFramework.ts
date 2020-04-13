@@ -72,7 +72,7 @@ export class PicoFramework {
     this.db = level(
       encode((conf && conf.leveldown) || memdown(), {
         keyEncoding: charwise,
-        valueEncoding: safeJsonCodec
+        valueEncoding: safeJsonCodec,
       })
     );
     this.rulesetLoader = conf && conf.rulesetLoader;
@@ -88,14 +88,14 @@ export class PicoFramework {
   private async startup() {
     this.emit({ type: "startup" });
 
-    await dbRange(this.db, { prefix: ["pico"] }, data => {
+    await dbRange(this.db, { prefix: ["pico"] }, (data) => {
       const pico = Pico.fromDb(this, data.value);
       this.picos.push(pico);
     });
 
-    await dbRange(this.db, { prefix: ["pico-channel"] }, data => {
+    await dbRange(this.db, { prefix: ["pico-channel"] }, (data) => {
       const { picoId } = data.value;
-      const pico = this.picos.find(pico => pico.id === picoId);
+      const pico = this.picos.find((pico) => pico.id === picoId);
       if (!pico) {
         throw new Error(`Missing picoId ${picoId}`);
       }
@@ -103,10 +103,10 @@ export class PicoFramework {
       pico.channels[chann.id] = chann;
     });
 
-    await dbRange(this.db, { prefix: ["pico-ruleset"] }, async data => {
+    await dbRange(this.db, { prefix: ["pico-ruleset"] }, async (data) => {
       const picoId = data.key[1];
       const rid = data.key[2];
-      const pico = this.picos.find(pico => pico.id === picoId);
+      const pico = this.picos.find((pico) => pico.id === picoId);
       if (!pico) {
         throw new Error(`Missing picoId ${picoId}`);
       }
@@ -144,7 +144,7 @@ export class PicoFramework {
       }
     }
     if (rootId) {
-      this.rootPico_ = this.picos.find(pico => pico.id === rootId);
+      this.rootPico_ = this.picos.find((pico) => pico.id === rootId);
       if (!this.rootPico_) {
         throw new Error(`Bad root pico ID ${rootId}`);
       }
@@ -152,7 +152,7 @@ export class PicoFramework {
       const pico = new Pico(this, this.genID());
       await this.db.batch([
         pico.toDbPut(),
-        { type: "put", key: ["root-pico"], value: pico.id }
+        { type: "put", key: ["root-pico"], value: pico.id },
       ]);
       this.rootPico_ = pico;
       this.picos.push(pico);
@@ -257,7 +257,7 @@ export class PicoFramework {
    * @ignore
    */
   removePico(picoId: string) {
-    this.picos = this.picos.filter(p => p.id !== picoId);
+    this.picos = this.picos.filter((p) => p.id !== picoId);
   }
 
   /**

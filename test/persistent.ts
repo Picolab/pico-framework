@@ -5,7 +5,7 @@ import { jsonDumpPico } from "./helpers/inspect";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
 const memdown = require("memdown");
 
-test("persistent", async function(t) {
+test("persistent", async function (t) {
   // re-use the db on each restart
   const down = memdown();
 
@@ -15,11 +15,11 @@ test("persistent", async function(t) {
   }
 
   const rsReg = rulesetRegistry();
-  ["one", "two", "three"].forEach(rid => {
+  ["one", "two", "three"].forEach((rid) => {
     rsReg.add({
       rid,
       version: "0.0.0",
-      init: () => ({})
+      init: () => ({}),
     });
   });
 
@@ -27,7 +27,7 @@ test("persistent", async function(t) {
     const pf = new PicoFramework({
       rulesetLoader: rsReg.loader,
       leveldown: down,
-      genID
+      genID,
     });
     await pf.start();
     return pf;
@@ -75,9 +75,17 @@ test("persistent", async function(t) {
     id: "id0",
     parent: null,
     children: [],
-    channels: [],
+    channels: [
+      {
+        id: "id0",
+        familyChannelPicoID: "id0",
+        tags: ["system", "self"],
+        eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },
+        queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] },
+      },
+    ],
     rulesets: [],
-    childrenPicos: []
+    childrenPicos: [],
   });
 
   pf = await restart();
@@ -86,12 +94,20 @@ test("persistent", async function(t) {
     id: "id0",
     parent: null,
     children: [],
-    channels: [],
+    channels: [
+      {
+        id: "id0",
+        familyChannelPicoID: "id0",
+        tags: ["system", "self"],
+        eventPolicy: { allow: [{ domain: "*", name: "*" }], deny: [] },
+        queryPolicy: { allow: [{ rid: "*", name: "*" }], deny: [] },
+      },
+    ],
     rulesets: [],
-    childrenPicos: []
+    childrenPicos: [],
   });
 
-  const dbKeys = await dbRange(pf.db, {}, function(data) {
+  const dbKeys = await dbRange(pf.db, {}, function (data) {
     return data.key.join("|");
   });
   t.deepEqual(dbKeys, ["pico|id0", "root-pico"]);
