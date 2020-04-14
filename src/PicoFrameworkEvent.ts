@@ -1,3 +1,4 @@
+import { RulesetConfig } from ".";
 import { PicoTxn } from "./PicoQueue";
 
 export type PicoFrameworkEvent =
@@ -6,7 +7,8 @@ export type PicoFrameworkEvent =
   | PicoFrameworkEvent_txnQueued
   | PicoFrameworkEvent_txnStart
   | PicoFrameworkEvent_txnDone
-  | PicoFrameworkEvent_txnError;
+  | PicoFrameworkEvent_txnError
+  | PicoFrameworkEvent_reInitRulesetError;
 
 export interface PicoFrameworkEvent_startup {
   type: "startup";
@@ -40,4 +42,12 @@ export interface PicoFrameworkEvent_txnError {
   picoId: string;
   txn: PicoTxn;
   error: any;
+}
+
+export interface PicoFrameworkEvent_reInitRulesetError {
+  type: "reInitRulesetError";
+  picoId: string;
+  rid: string;
+  version: string;
+  config?: RulesetConfig;
 }

@@ -236,6 +236,20 @@ export class PicoFramework {
     throw new Error(`ECI not found ${eci}`);
   }
 
+  reInitRuleset(rs: Ruleset) {
+    for (const pico of this.picos) {
+      pico.reInitRuleset(rs).catch((err) => {
+        this.emit({
+          type: "reInitRulesetError",
+          picoId: pico.id,
+          rid: rs.rid,
+          version: rs.version,
+          config: pico.rulesets[rs.rid]?.config,
+        });
+      });
+    }
+  }
+
   /**
    * @ignore
    *
