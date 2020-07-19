@@ -1,4 +1,5 @@
 import { PicoEvent } from "./PicoEvent";
+import { PicoQuery } from "./PicoQuery";
 import { RulesetContext } from "./RulesetContext";
 
 export interface Ruleset {
@@ -18,6 +19,6 @@ export interface RulesetInstance {
   event?(event: PicoEvent, eid: string): Promise<void> | void;
 
   query?: {
-    [name: string]: (args: { [key: string]: any }, qid: string) => any;
+    [name: string]: (query: PicoQuery, qid: string) => any;
   };
 }

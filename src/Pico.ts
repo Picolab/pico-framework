@@ -475,7 +475,7 @@ export class Pico {
             `Ruleset ${txn.query.rid} does not have query function "${txn.query.name}"`
           );
         }
-        const data = await qfn(txn.query.args, txn.id);
+        const data = await qfn(txn.query, txn.id);
         return data;
     }
   }

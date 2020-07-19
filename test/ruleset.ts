@@ -2,7 +2,7 @@ import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
-test("ruleset - eid, qid", async function(t) {
+test("ruleset - eid, qid", async function (t) {
   let log: any[] = [];
 
   let nextId = 0;
@@ -21,12 +21,12 @@ test("ruleset - eid, qid", async function(t) {
           log.push({ event, eid });
         },
         query: {
-          hello(args, qid) {
-            log.push({ args, qid });
-          }
-        }
+          hello(query, qid) {
+            log.push({ args: query.args, qid });
+          },
+        },
       };
-    }
+    },
   });
   await pf.start();
   const pico = await pf.rootPico;
@@ -40,7 +40,7 @@ test("ruleset - eid, qid", async function(t) {
     domain: "foo",
     name: "bar",
     data: { attrs: { aaa: 1 } },
-    time: 0
+    time: 0,
   });
 
   t.is(eid, "id2");
@@ -55,9 +55,9 @@ test("ruleset - eid, qid", async function(t) {
         domain: "foo",
         name: "bar",
         data: { attrs: { aaa: 1 } },
-        time: 0
-      }
-    }
+        time: 0,
+      },
+    },
   ]);
 
   log = [];
@@ -67,12 +67,12 @@ test("ruleset - eid, qid", async function(t) {
   t.deepEqual(log, [
     {
       qid: "id3",
-      args: { bbb: 2 }
-    }
+      args: { bbb: 2 },
+    },
   ]);
 });
 
-test("ruleset - responses", async function(t) {
+test("ruleset - responses", async function (t) {
   const rsReg = rulesetRegistry();
   const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   rsReg.add({
@@ -86,9 +86,9 @@ test("ruleset - responses", async function(t) {
             ctx.raiseEvent("a", "b", { aaa: aaa + 1 });
           }
           return aaa;
-        }
+        },
       };
-    }
+    },
   });
   await pf.start();
   const pico = await pf.rootPico;
@@ -100,13 +100,13 @@ test("ruleset - responses", async function(t) {
     domain: "a",
     name: "b",
     data: { attrs: { aaa: 1 } },
-    time: 0
+    time: 0,
   });
 
   const data = await pico.waitFor(eid);
 
   t.deepEqual(data, {
     eid,
-    responses: [1, 2, 3]
+    responses: [1, 2, 3],
   });
 });

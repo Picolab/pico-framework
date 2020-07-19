@@ -3,7 +3,7 @@ import { isCuid } from "cuid";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
-test("hello world", async function(t) {
+test("hello world", async function (t) {
   const rsReg = rulesetRegistry();
   const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
@@ -22,15 +22,15 @@ test("hello world", async function(t) {
           }
         },
         query: {
-          hello({ name }) {
-            return `Hello ${name}!`;
+          hello(query) {
+            return `Hello ${query.args.name}!`;
           },
           status() {
             return state.status;
-          }
-        }
+          },
+        },
       };
-    }
+    },
   });
 
   const pico = pf.rootPico;
@@ -42,7 +42,7 @@ test("hello world", async function(t) {
       eci,
       rid: "rid.hello",
       name: "hello",
-      args: { name: "Bob" }
+      args: { name: "Bob" },
     }),
     "Hello Bob!"
   );
@@ -52,7 +52,7 @@ test("hello world", async function(t) {
       eci,
       rid: "rid.hello",
       name: "status",
-      args: {}
+      args: {},
     }),
     undefined
   );
@@ -61,7 +61,7 @@ test("hello world", async function(t) {
     domain: "echo",
     name: "hello",
     data: { attrs: { name: "Ed" } },
-    time: Date.now()
+    time: Date.now(),
   });
   t.true(/^c[a-z0-9]+/.test(eid));
 
@@ -70,7 +70,7 @@ test("hello world", async function(t) {
       eci,
       rid: "rid.hello",
       name: "status",
-      args: {}
+      args: {},
     }),
     "Said hello to Ed with an event."
   );
@@ -82,13 +82,13 @@ test("hello world", async function(t) {
         domain: "echo",
         name: "hello",
         data: { attrs: { name: "Jim" } },
-        time: Date.now()
+        time: Date.now(),
       },
       {
         eci,
         rid: "rid.hello",
         name: "status",
-        args: {}
+        args: {},
       }
     ),
     "Said hello to Jim with an event."
@@ -99,7 +99,7 @@ test("hello world", async function(t) {
       eci,
       rid: "rid.hello",
       name: "blah",
-      args: {}
+      args: {},
     })
   );
   t.is(
@@ -112,7 +112,7 @@ test("hello world", async function(t) {
       eci: "notreal",
       rid: "rid.hello",
       name: "blah",
-      args: {}
+      args: {},
     })
   );
   t.is(err + "", "Error: ECI not found notreal");
@@ -124,20 +124,20 @@ test("hello world", async function(t) {
         domain: "echo",
         name: "hello",
         data: { attrs: { name: "Jim" } },
-        time: Date.now()
+        time: Date.now(),
       },
       {
         eci: "different",
         rid: "rid.hello",
         name: "status",
-        args: {}
+        args: {},
       }
     )
   );
   t.is(err + "", "Error: eventQuery must use the same channel");
 });
 
-test("pico can pass configuration to rulesets", async function(t) {
+test("pico can pass configuration to rulesets", async function (t) {
   const rsReg = rulesetRegistry();
   const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
@@ -153,10 +153,10 @@ test("pico can pass configuration to rulesets", async function(t) {
         query: {
           name() {
             return confName;
-          }
-        }
+          },
+        },
       };
-    }
+    },
   });
 
   const pico = pf.rootPico;
@@ -169,7 +169,7 @@ test("pico can pass configuration to rulesets", async function(t) {
       eci,
       rid: "some.rid",
       name: "name",
-      args: {}
+      args: {},
     }),
     "default name"
   );
@@ -181,13 +181,13 @@ test("pico can pass configuration to rulesets", async function(t) {
       eci,
       rid: "some.rid",
       name: "name",
-      args: {}
+      args: {},
     }),
     "Ove"
   );
 });
 
-test("check channel policies", async function(t) {
+test("check channel policies", async function (t) {
   const rsReg = rulesetRegistry();
   const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
@@ -204,17 +204,17 @@ test("check channel policies", async function(t) {
         },
         query: {
           foo: () => "foo",
-          bar: () => "bar"
-        }
+          bar: () => "bar",
+        },
       };
-    }
+    },
   });
   const pico = pf.rootPico;
   await pico.install(rsReg.get("some.rid", "0.0.0"));
   const eci = (
     await pico.newChannel({
       eventPolicy: { allow: [{ domain: "*", name: "foo" }], deny: [] },
-      queryPolicy: { allow: [{ rid: "*", name: "foo" }], deny: [] }
+      queryPolicy: { allow: [{ rid: "*", name: "foo" }], deny: [] },
     })
   ).id;
 
@@ -225,7 +225,7 @@ test("check channel policies", async function(t) {
         domain,
         name,
         data: { attrs: {} },
-        time: 0
+        time: 0,
       });
     } catch (e) {
       return e + "";
@@ -241,7 +241,7 @@ test("check channel policies", async function(t) {
         eci,
         rid: "some.rid",
         name,
-        args: {}
+        args: {},
       });
     } catch (e) {
       return e + "";
