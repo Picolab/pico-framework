@@ -1,7 +1,7 @@
 import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 
-test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
+test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function (t) {
   const { pf, event, rsReg } = await mkCtxTestEnv();
 
   t.is(await event("getEnt", ["foo"]), null);
@@ -14,7 +14,7 @@ test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
   rsReg.add({
     rid: "rid.other",
     version: "0.0.0",
-    init: () => ({})
+    init: () => ({}),
   });
 
   const pico = await pf.rootPico;
@@ -22,8 +22,8 @@ test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
   const eciToChild = await pico.newPico({
     rulesets: [
       { rs: rsReg.get("rid.ctx", "0.0.0") },
-      { rs: rsReg.get("rid.other", "0.0.0") }
-    ]
+      { rs: rsReg.get("rid.other", "0.0.0") },
+    ],
   });
   const subPico = pf.getPico(eciToChild);
 
@@ -63,4 +63,14 @@ test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function(t) {
   t.is(await pico.getEnt("rid.other", "some"), null);
   t.is(await subPico.getEnt("rid.ctx", "some"), null);
   t.deepEqual(await subPico.getEnt("rid.other", "some"), ["one", 2]);
+});
+
+test.only("ent:foo := null", async function (t) {
+  const { pf, event, rsReg } = await mkCtxTestEnv();
+
+  t.is(await event("getEnt", ["foo"]), null);
+  t.is(await event("putEnt", ["foo", 1]), undefined);
+  t.is(await event("getEnt", ["foo"]), 1);
+  t.is(await event("putEnt", ["foo", null]), undefined);
+  t.is(await event("getEnt", ["foo"]), null);
 });

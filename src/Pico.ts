@@ -404,7 +404,12 @@ export class Pico {
 
   async putEnt(rid: string, name: string, value: any) {
     this.assertInstalled(rid);
-    await this.pf.db.put(["entvar", this.id, rid, name], value);
+    const key = ["entvar", this.id, rid, name];
+    if (value === null || value === undefined) {
+      await this.pf.db.del(key);
+    } else {
+      await this.pf.db.put(key, value);
+    }
   }
 
   async delEnt(rid: string, name: string) {
