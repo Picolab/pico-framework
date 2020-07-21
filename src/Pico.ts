@@ -414,6 +414,7 @@ export class Pico {
 
   private schedule: { rid: string; event: PicoEvent }[] = [];
   private current: { rid: string; event: PicoEvent } | undefined;
+  private currentTxn: PicoTxn | undefined;
 
   raiseEvent(
     domain: string,
@@ -428,7 +429,7 @@ export class Pico {
       data: { attrs },
     });
     if (typeof forRid === "string") {
-      this.schedule.push({ rid: forRid, event });
+      this.addToSchedule(forRid, event);
     } else {
       this.addEventToSchedule(event);
     }
@@ -436,47 +437,75 @@ export class Pico {
 
   clearSchedule() {
     this.schedule = [];
+    if (this.currentTxn && this.currentTxn.kind === "event") {
+      this.pf.emit({
+        type: "eventScheduleCleared",
+        picoId: this.id,
+        txn: this.currentTxn,
+      });
+    }
+  }
+
+  addToSchedule(rid: string, event: PicoEvent) {
+    this.schedule.push({ rid, event });
+    if (this.currentTxn && this.currentTxn.kind === "event") {
+      this.pf.emit({
+        type: "eventScheduleAdded",
+        picoId: this.id,
+        txn: this.currentTxn,
+        rid,
+        event,
+      });
+    }
   }
 
   private addEventToSchedule(event: PicoEvent) {
     for (const rid of Object.keys(this.rulesets)) {
-      this.schedule.push({ rid, event });
+      this.addToSchedule(rid, event);
     }
   }
 
   private async doTxn(txn: PicoTxn): Promise<any> {
-    switch (txn.kind) {
-      case "event":
-        this.schedule = []; // reset schedule every new event
-        this.addEventToSchedule(txn.event);
-        const eid = txn.id;
-        const responses: any[] = [];
-        try {
-          while ((this.current = this.schedule.shift())) {
-            const rs = this.rulesets[this.current.rid];
-            if (rs && rs.instance.event) {
-              // must process one event at a time to maintain the pico's single-threaded guarantee
-              const response = await rs.instance.event(this.current.event, eid);
-              responses.push(response);
+    this.currentTxn = txn;
+    try {
+      switch (txn.kind) {
+        case "event":
+          this.schedule = []; // reset schedule every new event
+          this.addEventToSchedule(txn.event);
+          const eid = txn.id;
+          const responses: any[] = [];
+          try {
+            while ((this.current = this.schedule.shift())) {
+              const rs = this.rulesets[this.current.rid];
+              if (rs && rs.instance.event) {
+                // must process one event at a time to maintain the pico's single-threaded guarantee
+                const response = await rs.instance.event(
+                  this.current.event,
+                  eid
+                );
+                responses.push(response);
+              }
             }
+          } finally {
+            this.current = undefined;
           }
-        } finally {
-          this.current = undefined;
-        }
-        return { eid, responses };
-      case "query":
-        const rs = this.rulesets[txn.query.rid];
-        if (!rs) {
-          throw new Error(`Pico doesn't have ${txn.query.rid} installed.`);
-        }
-        const qfn = rs.instance.query && rs.instance.query[txn.query.name];
-        if (!qfn) {
-          throw new Error(
-            `Ruleset ${txn.query.rid} does not have query function "${txn.query.name}"`
-          );
-        }
-        const data = await qfn(txn.query, txn.id);
-        return data;
+          return { eid, responses };
+        case "query":
+          const rs = this.rulesets[txn.query.rid];
+          if (!rs) {
+            throw new Error(`Pico doesn't have ${txn.query.rid} installed.`);
+          }
+          const qfn = rs.instance.query && rs.instance.query[txn.query.name];
+          if (!qfn) {
+            throw new Error(
+              `Ruleset ${txn.query.rid} does not have query function "${txn.query.name}"`
+            );
+          }
+          const data = await qfn(txn.query, txn.id);
+          return data;
+      }
+    } finally {
+      this.currentTxn = undefined;
     }
   }
 }
