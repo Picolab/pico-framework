@@ -1,6 +1,6 @@
 {
   "name": "pico-framework",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "A framework for building actor-based, people-centric systems. (pico = PersIstent Compute Objects)",
   "repository": {
     "type": "git",
