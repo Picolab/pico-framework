@@ -1,5 +1,6 @@
 import * as _ from "lodash";
 import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
+import { dbRange } from "./dbRange";
 import { cleanEvent, PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
 import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
@@ -190,7 +191,7 @@ export class Pico {
 
     const { pico } = this.pf.lookupChannel(eci);
 
-    const { ops, picoIds } = pico.delPicoDbOps();
+    const { ops, picoIds } = await pico.delPicoDbOps();
 
     if (pico.parent) {
       ops.push(this.channels[pico.parent].toDbDel());
@@ -218,14 +219,17 @@ export class Pico {
    * Recursively get the delete operations and ids
    * DO NOT mutate state, only build the operations
    */
-  private delPicoDbOps(): { ops: LevelBatch[]; picoIds: string[] } {
+  private async delPicoDbOps(): Promise<{
+    ops: LevelBatch[];
+    picoIds: string[];
+  }> {
     let ops: LevelBatch[] = [];
     let picoIds: string[] = [];
 
     for (const eci of this.children) {
       // recursive delete
       const { pico } = this.pf.lookupChannel(eci);
-      const sub = pico.delPicoDbOps();
+      const sub = await pico.delPicoDbOps();
       ops = ops.concat(sub.ops);
       picoIds = picoIds.concat(sub.picoIds);
     }
@@ -234,7 +238,7 @@ export class Pico {
       ops.push(channel.toDbDel());
     }
     for (const rid of Object.keys(this.rulesets)) {
-      ops.push(this.uninstallBase(rid));
+      ops = ops.concat(await this.uninstallBase(rid));
     }
     ops.push(this.toDbDel());
 
@@ -372,15 +376,28 @@ export class Pico {
   }
 
   async uninstall(rid: string) {
-    await this.pf.db.batch([this.uninstallBase(rid)]);
+    const ops = await this.uninstallBase(rid);
+    await this.pf.db.batch(ops);
     delete this.rulesets[rid];
   }
 
-  private uninstallBase(rid: string): LevelBatch {
-    return {
+  private async uninstallBase(rid: string): Promise<LevelBatch[]> {
+    const ops = await dbRange(
+      this.pf.db,
+      { prefix: ["entvar", this.id, rid] },
+      (data) => {
+        const delEnt: LevelBatch = {
+          type: "del",
+          key: data.key,
+        };
+        return delEnt;
+      }
+    );
+    ops.push({
       type: "del",
       key: ["pico-ruleset", this.id, rid],
-    };
+    });
+    return ops;
   }
 
   private assertInstalled(rid: string) {
