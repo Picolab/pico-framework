@@ -101,6 +101,9 @@ export class PicoFramework {
       pico.channels[chann.id] = chann;
     });
 
+    // get rids that are used, and load them
+    // install separate so they are all loaded/warmed up first in case of dependencies
+    const toInstall: { pico: Pico; rs: Ruleset; config: any }[] = [];
     await dbRange(this.db, { prefix: ["pico-ruleset"] }, async (data) => {
       const picoId = data.key[1];
       const rid = data.key[2];
@@ -110,7 +113,7 @@ export class PicoFramework {
       }
       try {
         const rs = await this.rulesetLoader(picoId, rid, data.value.config);
-        await pico.install(rs, data.value.config);
+        toInstall.push({ pico, rs, config: data.value.config });
       } catch (err) {
         if (this.onStartupRulesetInitError) {
           this.onStartupRulesetInitError(picoId, rid, data.value.config, err);
@@ -119,6 +122,18 @@ export class PicoFramework {
         }
       }
     });
+
+    for (const { pico, rs, config } of toInstall) {
+      try {
+        await pico.install(rs, config);
+      } catch (err) {
+        if (this.onStartupRulesetInitError) {
+          this.onStartupRulesetInitError(pico.id, rs.rid, config, err);
+        } else {
+          throw err;
+        }
+      }
+    }
 
     let rootId: string | null;
     try {
