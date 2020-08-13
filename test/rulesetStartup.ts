@@ -26,18 +26,16 @@ test("rulesetStartup", async function (t) {
 
   // Restart - this time fail to startup the ruleset
   errorOnInit = true;
-  pf = new PicoFramework({ rulesetLoader: rsReg.loader, leveldown: down });
-  rsReg.add(rs);
-  let err = await t.throwsAsync(pf.start());
-  t.is(err + "", "Error: errorOnInit = true");
-
-  // Restart - this time swallow the error
   let swallowedErrors: string[] = [];
   pf = new PicoFramework({
     rulesetLoader: rsReg.loader,
     leveldown: down,
-    onStartupRulesetInitError(picoId, rid, config, error) {
-      swallowedErrors.push(rid + JSON.stringify(config) + error);
+    onFrameworkEvent: (e) => {
+      switch (e.type) {
+        case "startupRulesetInitError":
+          swallowedErrors.push(e.rid + JSON.stringify(e.config) + e.error);
+          break;
+      }
     },
   });
   rsReg.add(rs);

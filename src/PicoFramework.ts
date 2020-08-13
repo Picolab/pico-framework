@@ -19,18 +19,10 @@ export type RulesetLoader = (
   config: RulesetConfig
 ) => Ruleset | Promise<Ruleset>;
 
-export type OnStartupRulesetInitError = (
-  picoId: string,
-  rid: string,
-  config: RulesetConfig,
-  error: any
-) => void;
-
 type OnFrameworkEvent = (event: PicoFrameworkEvent) => void;
 
 export interface PicoFrameworkConf {
   rulesetLoader: RulesetLoader;
-  onStartupRulesetInitError?: OnStartupRulesetInitError;
   leveldown?: AbstractLevelDOWN;
   genID?: () => string;
   environment?: any;
@@ -55,7 +47,6 @@ export class PicoFramework {
   genID: () => string;
 
   private rulesetLoader: RulesetLoader;
-  private onStartupRulesetInitError?: OnStartupRulesetInitError;
 
   readonly environment?: any;
 
@@ -74,7 +65,6 @@ export class PicoFramework {
       })
     );
     this.rulesetLoader = conf && conf.rulesetLoader;
-    this.onStartupRulesetInitError = conf && conf.onStartupRulesetInitError;
     this.genID = (conf && conf.genID) || cuid;
     this.environment = conf && conf.environment;
     this.onFrameworkEvent = conf && conf.onFrameworkEvent;
@@ -114,24 +104,28 @@ export class PicoFramework {
       try {
         const rs = await this.rulesetLoader(picoId, rid, data.value.config);
         toInstall.push({ pico, rs, config: data.value.config });
-      } catch (err) {
-        if (this.onStartupRulesetInitError) {
-          this.onStartupRulesetInitError(picoId, rid, data.value.config, err);
-        } else {
-          throw err;
-        }
+      } catch (error) {
+        this.emit({
+          type: "startupRulesetInitError",
+          picoId,
+          rid,
+          config: data.value.config,
+          error,
+        });
       }
     });
 
     for (const { pico, rs, config } of toInstall) {
       try {
         await pico.install(rs, config);
-      } catch (err) {
-        if (this.onStartupRulesetInitError) {
-          this.onStartupRulesetInitError(pico.id, rs.rid, config, err);
-        } else {
-          throw err;
-        }
+      } catch (error) {
+        this.emit({
+          type: "startupRulesetInitError",
+          picoId: pico.id,
+          rid: rs.rid,
+          config,
+          error,
+        });
       }
     }
 

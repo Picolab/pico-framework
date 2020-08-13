@@ -5,6 +5,7 @@ import { PicoTxn, PicoTxn_event } from "./PicoQueue";
 export type PicoFrameworkEvent =
   | PicoFrameworkEvent_startup
   | PicoFrameworkEvent_startupDone
+  | PicoFrameworkEvent_startupRulesetInitError
   | PicoFrameworkEvent_txnQueued
   | PicoFrameworkEvent_txnStart
   | PicoFrameworkEvent_txnDone
@@ -19,6 +20,14 @@ export interface PicoFrameworkEvent_startup {
 
 export interface PicoFrameworkEvent_startupDone {
   type: "startupDone";
+}
+
+export interface PicoFrameworkEvent_startupRulesetInitError {
+  type: "startupRulesetInitError";
+  picoId: string;
+  rid: string;
+  config: RulesetConfig;
+  error: any;
 }
 
 export interface PicoFrameworkEvent_txnQueued {
