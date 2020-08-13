@@ -25,12 +25,12 @@ test("ctx.newPico", async function (t) {
         familyChannelPicoID: null,
       },
     ],
-    rulesets: [{ rid: "rid.ctx", version: "0.0.0", config: {} }],
+    rulesets: [{ rid: "rid.ctx", config: {} }],
   });
 
   t.deepEqual(
     await pf.getPico("id1").newPico({
-      rulesets: [{ rs: rsReg.get("rid.ctx", "0.0.0") }],
+      rulesets: [{ rs: rsReg.get("rid.ctx") }],
     }),
     "id5"
   );
@@ -62,6 +62,6 @@ test("ctx.newPico", async function (t) {
         familyChannelPicoID: "id3",
       },
     ],
-    rulesets: [{ rid: "rid.ctx", version: "0.0.0", config: {} }],
+    rulesets: [{ rid: "rid.ctx", config: {} }],
   });
 });

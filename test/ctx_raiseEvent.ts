@@ -2,14 +2,13 @@ import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
-test("raiseEvent", async function(t) {
+test("raiseEvent", async function (t) {
   const rsReg = rulesetRegistry();
   const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
 
   rsReg.add({
     rid: "rid.raise",
-    version: "0.0.0",
     init(ctx) {
       const history: string[] = [];
       return {
@@ -25,21 +24,21 @@ test("raiseEvent", async function(t) {
           }
         },
         query: {
-          history: () => history
-        }
+          history: () => history,
+        },
       };
-    }
+    },
   });
 
   const pico = pf.rootPico;
   const eci = (await pico.newChannel()).id;
-  await pico.install(rsReg.get("rid.raise", "0.0.0"));
+  await pico.install(rsReg.get("rid.raise"));
 
   let history = await pf.query({
     eci,
     rid: "rid.raise",
     name: "history",
-    args: {}
+    args: {},
   });
   t.is(history.join("|"), "");
 
@@ -49,20 +48,20 @@ test("raiseEvent", async function(t) {
       domain: "do",
       name: "raise",
       data: { attrs: {} },
-      time: Date.now()
+      time: Date.now(),
     },
     {
       eci,
       rid: "rid.raise",
       name: "history",
-      args: {}
+      args: {},
     }
   );
 
   t.is(history.join("|"), "doing raise|got the raise");
 });
 
-test("raiseEvent should use cleanEvent", async function(t) {
+test("raiseEvent should use cleanEvent", async function (t) {
   const history: any[] = [];
   let ctx: any;
   const rsReg = rulesetRegistry();
@@ -70,7 +69,6 @@ test("raiseEvent should use cleanEvent", async function(t) {
   await pf.start();
   rsReg.add({
     rid: "rid.raise",
-    version: "0.0.0",
     init($ctx) {
       ctx = $ctx;
       return {
@@ -92,13 +90,13 @@ test("raiseEvent should use cleanEvent", async function(t) {
                 )}`
               );
           }
-        }
+        },
       };
-    }
+    },
   });
   const pico = pf.rootPico;
   const eci = (await pico.newChannel()).id;
-  await pico.install(rsReg.get("rid.raise", "0.0.0"));
+  await pico.install(rsReg.get("rid.raise"));
 
   function signal(domain: string, name: string) {
     return pf.eventWait({ eci, domain, name } as any);
@@ -110,17 +108,17 @@ test("raiseEvent should use cleanEvent", async function(t) {
   await signal("no", "name");
   t.deepEqual(history, [
     "Error: missing event.domain",
-    "Error: missing event.name"
+    "Error: missing event.name",
   ]);
   await signal("no", "attrs");
   t.deepEqual(history, [
     "Error: missing event.domain",
     "Error: missing event.name",
-    eci + "/foo:bar?{}"
+    eci + "/foo:bar?{}",
   ]);
 });
 
-test("raiseEvent - forRid", async function(t) {
+test("raiseEvent - forRid", async function (t) {
   let history: string[] = [];
 
   const rsReg = rulesetRegistry();
@@ -128,7 +126,6 @@ test("raiseEvent - forRid", async function(t) {
   await pf.start();
   rsReg.add({
     rid: "rid.A",
-    version: "0.0.0",
     init(ctx) {
       return {
         event(event) {
@@ -142,13 +139,12 @@ test("raiseEvent - forRid", async function(t) {
               history.push("rid.A - " + dt);
               break;
           }
-        }
+        },
       };
-    }
+    },
   });
   rsReg.add({
     rid: "rid.A",
-    version: "0.0.0",
     init(ctx) {
       return {
         event(event) {
@@ -157,24 +153,23 @@ test("raiseEvent - forRid", async function(t) {
             case "do:raise":
               ctx.raiseEvent("got", "raise", {}, event.data.attrs.forRid);
           }
-        }
+        },
       };
-    }
+    },
   });
   rsReg.add({
     rid: "rid.B",
-    version: "0.0.0",
     init(ctx) {
       return {
         event(event) {
           history.push(`rid.B - ${event.domain}:${event.name}`);
-        }
+        },
       };
-    }
+    },
   });
   const pico = pf.rootPico;
-  await pico.install(rsReg.get("rid.A", "0.0.0"));
-  await pico.install(rsReg.get("rid.B", "0.0.0"));
+  await pico.install(rsReg.get("rid.A"));
+  await pico.install(rsReg.get("rid.B"));
   const eci = (await pico.newChannel()).id;
 
   await pf.eventWait({ eci, domain: "aaa", name: "aaa" } as any);
@@ -186,7 +181,7 @@ test("raiseEvent - forRid", async function(t) {
     "rid.A - do:raise",
     "rid.B - do:raise",
     "rid.A - got:raise",
-    "rid.B - got:raise"
+    "rid.B - got:raise",
   ]);
   history = [];
 
@@ -194,12 +189,12 @@ test("raiseEvent - forRid", async function(t) {
     eci,
     domain: "do",
     name: "raise",
-    data: { attrs: { forRid: "rid.A" } }
+    data: { attrs: { forRid: "rid.A" } },
   } as any);
   t.deepEqual(history, [
     "rid.A - do:raise",
     "rid.B - do:raise",
-    "rid.A - got:raise"
+    "rid.A - got:raise",
   ]);
   history = [];
 
@@ -207,12 +202,12 @@ test("raiseEvent - forRid", async function(t) {
     eci,
     domain: "do",
     name: "raise",
-    data: { attrs: { forRid: "rid.B" } }
+    data: { attrs: { forRid: "rid.B" } },
   } as any);
   t.deepEqual(history, [
     "rid.A - do:raise",
     "rid.B - do:raise",
-    "rid.B - got:raise"
+    "rid.B - got:raise",
   ]);
   history = [];
 
@@ -220,7 +215,7 @@ test("raiseEvent - forRid", async function(t) {
     eci,
     domain: "do",
     name: "raise",
-    data: { attrs: { forRid: "404" } }
+    data: { attrs: { forRid: "404" } },
   } as any);
   t.deepEqual(history, ["rid.A - do:raise", "rid.B - do:raise"]);
 });

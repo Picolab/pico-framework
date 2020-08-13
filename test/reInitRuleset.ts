@@ -2,7 +2,7 @@ import test from "ava";
 import { PicoFramework, Ruleset } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
-test("reInitRuleset", async function(t) {
+test("reInitRuleset", async function (t) {
   const rsReg = rulesetRegistry();
   const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   await pf.start();
@@ -11,17 +11,16 @@ test("reInitRuleset", async function(t) {
 
   rsReg.add({
     rid: "rid.A",
-    version: "draft",
     init() {
       return { query: { foo: () => "one" } };
-    }
+    },
   });
-  await pico.install(rsReg.get("rid.A", "draft"));
+  await pico.install(rsReg.get("rid.A"));
   const daQuery = {
     eci,
     rid: "rid.A",
     name: "foo",
-    args: {}
+    args: {},
   };
 
   let res = await pf.query(daQuery);
@@ -29,10 +28,9 @@ test("reInitRuleset", async function(t) {
 
   const newDraft: Ruleset = {
     rid: "rid.A",
-    version: "draft",
     init() {
       return { query: { foo: () => "two" } };
-    }
+    },
   };
 
   rsReg.add(newDraft);

@@ -8,7 +8,7 @@ test("ctx.putChannel", async function (t) {
   genID();
   let subECI = await pf
     .getPico("id1")
-    .newPico({ rulesets: [{ rs: rsReg.get("rid.ctx", "0.0.0") }] });
+    .newPico({ rulesets: [{ rs: rsReg.get("rid.ctx") }] });
 
   let sub = await event("query", [
     { eci: subECI, rid: "rid.ctx", name: "pico" },

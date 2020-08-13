@@ -3,14 +3,14 @@ import { PicoEvent } from "../src/PicoEvent";
 import { PicoQuery } from "../src/PicoQuery";
 import { testPicoFramework } from "./helpers/testPicoFramework";
 
-test("ctx.newChannel", async function(t) {
+test("ctx.newChannel", async function (t) {
   const { pf, rsReg } = await testPicoFramework([
-    { rid: "foo", version: "0.0.0", init: () => ({ query: { b() {} } }) }
+    { rid: "foo", init: () => ({ query: { b() {} } }) },
   ]);
 
   const pico = pf.rootPico;
   const eciToChild = await pico.newPico({
-    rulesets: [{ rs: rsReg.get("foo", "0.0.0") }]
+    rulesets: [{ rs: rsReg.get("foo") }],
   });
   const subPico = pf.getPico(eciToChild);
 

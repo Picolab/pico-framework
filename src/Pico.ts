@@ -41,7 +41,6 @@ export interface PicoReadOnly {
 
 export interface PicoRulesetReadOnly {
   rid: string;
-  version: string;
   config: RulesetConfig;
 }
 
@@ -62,7 +61,6 @@ export class Pico {
   rulesets: {
     [rid: string]: {
       instance: RulesetInstance;
-      version: string;
       config: RulesetConfig;
     };
   } = {};
@@ -164,7 +162,6 @@ export class Pico {
         const { instance, dbPut } = await child.installBase(rs.rs, rs.config);
         dbOps.push(dbPut);
         child.rulesets[rs.rs.rid] = {
-          version: rs.rs.version,
           config: rs.config || {},
           instance,
         };
@@ -255,7 +252,6 @@ export class Pico {
       channels: Object.values(this.channels).map((c) => c.toReadOnly()),
       rulesets: Object.keys(this.rulesets).map((rid) => ({
         rid,
-        version: this.rulesets[rid].version,
         config: this.rulesets[rid].config,
       })),
     };
@@ -334,15 +330,14 @@ export class Pico {
   async install(rs: Ruleset, config: RulesetConfig = {}) {
     const { instance, dbPut } = await this.installBase(rs, config);
     await this.pf.db.batch([dbPut]);
-    this.rulesets[rs.rid] = { version: rs.version, config, instance };
+    this.rulesets[rs.rid] = { config, instance };
   }
 
   async reInitRuleset(rs: Ruleset) {
     const rid = rs.rid;
-    const version = rs.version;
-    if (this.rulesets[rid] && this.rulesets[rid].version === version) {
+    if (this.rulesets[rid]) {
       const config = this.rulesets[rid].config;
-      const ctx = createRulesetContext(this.pf, this, { rid, version, config });
+      const ctx = createRulesetContext(this.pf, this, { rid, config });
       const instance = await rs.init(ctx, this.pf.environment);
       this.rulesets[rid].instance = instance;
     }
@@ -353,10 +348,9 @@ export class Pico {
     config: RulesetConfig = {}
   ): Promise<{ instance: RulesetInstance; dbPut: LevelBatch }> {
     // even if we already have that rid installed, we need to init again
-    // b/c the version or configuration may have changed
+    // b/c the configuration may have changed
     const ctx = createRulesetContext(this.pf, this, {
       rid: rs.rid,
-      version: rs.version,
       config,
     });
     const instance = await rs.init(ctx, this.pf.environment);
@@ -368,7 +362,6 @@ export class Pico {
         key: ["pico-ruleset", this.id, rs.rid],
         value: {
           rid: rs.rid,
-          version: rs.version,
           config,
         },
       },

@@ -13,17 +13,13 @@ test("ctx.getEnt, ctx.putEnt, ctx.delEnt", async function (t) {
 
   rsReg.add({
     rid: "rid.other",
-    version: "0.0.0",
     init: () => ({}),
   });
 
   const pico = await pf.rootPico;
-  pico.install(rsReg.get("rid.other", "0.0.0"));
+  pico.install(rsReg.get("rid.other"));
   const eciToChild = await pico.newPico({
-    rulesets: [
-      { rs: rsReg.get("rid.ctx", "0.0.0") },
-      { rs: rsReg.get("rid.other", "0.0.0") },
-    ],
+    rulesets: [{ rs: rsReg.get("rid.ctx") }, { rs: rsReg.get("rid.other") }],
   });
   const subPico = pf.getPico(eciToChild);
 

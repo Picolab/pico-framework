@@ -18,7 +18,6 @@ test("persistent", async function (t) {
   ["one", "two", "three"].forEach((rid) => {
     rsReg.add({
       rid,
-      version: "0.0.0",
       init: () => ({}),
     });
   });
@@ -43,13 +42,13 @@ test("persistent", async function (t) {
   let pico10 = pf.getPico(await pico1.newPico());
   let pico11 = pf.getPico(await pico1.newPico());
 
-  await pico.install(rsReg.get("one", "0.0.0"), { one: "two" });
-  await pico0.install(rsReg.get("two", "0.0.0"), { some: { thing: 22 } });
-  await pico00.install(rsReg.get("three", "0.0.0"), { aaa: 1 });
-  await pico00.install(rsReg.get("two", "0.0.0"));
-  await pico000.install(rsReg.get("two", "0.0.0"));
-  await pico1.install(rsReg.get("two", "0.0.0"), { some: { thing: 22 } });
-  await pico10.install(rsReg.get("three", "0.0.0"));
+  await pico.install(rsReg.get("one"), { one: "two" });
+  await pico0.install(rsReg.get("two"), { some: { thing: 22 } });
+  await pico00.install(rsReg.get("three"), { aaa: 1 });
+  await pico00.install(rsReg.get("two"));
+  await pico000.install(rsReg.get("two"));
+  await pico1.install(rsReg.get("two"), { some: { thing: 22 } });
+  await pico10.install(rsReg.get("three"));
 
   let chann = await pico11.newChannel({ tags: ["one", "two"] });
   await pico11.putChannel(chann.id, { tags: ["changed", "it"] });

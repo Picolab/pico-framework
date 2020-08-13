@@ -2,7 +2,7 @@ import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
 
-test("clearSchedule", async function(t) {
+test("clearSchedule", async function (t) {
   let log: string[] = [];
 
   const rsReg = rulesetRegistry();
@@ -10,7 +10,6 @@ test("clearSchedule", async function(t) {
   const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
   rsReg.add({
     rid: "rid.A",
-    version: "0.0.0",
     init(ctx) {
       return {
         event(event) {
@@ -18,25 +17,24 @@ test("clearSchedule", async function(t) {
           if (event.name === "clear") {
             ctx.clearSchedule();
           }
-        }
+        },
       };
-    }
+    },
   });
   rsReg.add({
     rid: "rid.B",
-    version: "0.0.0",
     init(ctx) {
       return {
         event(event) {
           log.push(`rid.B - ${event.domain}:${event.name}`);
-        }
+        },
       };
-    }
+    },
   });
   await pf.start();
   const pico = pf.rootPico;
-  await pico.install(rsReg.get("rid.A", "0.0.0"), {});
-  await pico.install(rsReg.get("rid.B", "0.0.0"), {});
+  await pico.install(rsReg.get("rid.A"), {});
+  await pico.install(rsReg.get("rid.B"), {});
   const eci = (await pico.newChannel()).id;
 
   t.deepEqual(log, []);
@@ -47,7 +45,7 @@ test("clearSchedule", async function(t) {
 
   await pf.eventWait({ eci, domain: "a", name: "clear" } as any);
   t.deepEqual(log, [
-    "rid.A - a:clear"
+    "rid.A - a:clear",
     // NOTE: rid.B does not run
   ]);
 });

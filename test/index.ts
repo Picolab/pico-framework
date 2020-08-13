@@ -10,7 +10,6 @@ test("hello world", async function (t) {
 
   rsReg.add({
     rid: "rid.hello",
-    version: "0.0.0",
     init(ctx) {
       const state: any = {};
       return {
@@ -34,7 +33,7 @@ test("hello world", async function (t) {
   });
 
   const pico = pf.rootPico;
-  await pico.install(rsReg.get("rid.hello", "0.0.0"));
+  await pico.install(rsReg.get("rid.hello"));
   const eci = (await pico.newChannel()).id;
 
   t.is(
@@ -144,7 +143,6 @@ test("pico can pass configuration to rulesets", async function (t) {
 
   rsReg.add({
     rid: "some.rid",
-    version: "0.0.0",
     init(ctx) {
       const confName =
         (ctx.ruleset && ctx.ruleset.config && ctx.ruleset.config.name) ||
@@ -162,7 +160,7 @@ test("pico can pass configuration to rulesets", async function (t) {
   const pico = pf.rootPico;
   const eci = (await pico.newChannel()).id;
 
-  await pico.install(rsReg.get("some.rid", "0.0.0"));
+  await pico.install(rsReg.get("some.rid"));
 
   t.deepEqual(
     await pf.query({
@@ -174,7 +172,7 @@ test("pico can pass configuration to rulesets", async function (t) {
     "default name"
   );
 
-  await pico.install(rsReg.get("some.rid", "0.0.0"), { name: "Ove" });
+  await pico.install(rsReg.get("some.rid"), { name: "Ove" });
 
   t.deepEqual(
     await pf.query({
@@ -194,7 +192,6 @@ test("check channel policies", async function (t) {
 
   rsReg.add({
     rid: "some.rid",
-    version: "0.0.0",
     init(ctx) {
       return {
         event(event) {
@@ -210,7 +207,7 @@ test("check channel policies", async function (t) {
     },
   });
   const pico = pf.rootPico;
-  await pico.install(rsReg.get("some.rid", "0.0.0"));
+  await pico.install(rsReg.get("some.rid"));
   const eci = (
     await pico.newChannel({
       eventPolicy: { allow: [{ domain: "*", name: "foo" }], deny: [] },

@@ -32,7 +32,6 @@ test("ctx.uninstall - clear ent vars", async function (t) {
 
   rsReg.add({
     rid: "foo.bar",
-    version: "0.0.0",
     init(ctx) {
       return {
         event(event) {
@@ -66,7 +65,7 @@ test("ctx.uninstall - clear ent vars", async function (t) {
     });
   }
 
-  await pf.rootPico.install(rsReg.get("foo.bar", "0.0.0"));
+  await pf.rootPico.install(rsReg.get("foo.bar"));
 
   await putEnt("aaaa", "one");
   await putEnt("bbbb", "two");
@@ -87,7 +86,7 @@ test("ctx.uninstall - clear ent vars", async function (t) {
   let err = await t.throwsAsync(() => getEnt("aaaa"));
   t.is(err + "", "Error: Pico doesn't have foo.bar installed.");
 
-  await pf.rootPico.install(rsReg.get("foo.bar", "0.0.0"));
+  await pf.rootPico.install(rsReg.get("foo.bar"));
 
   t.is(await getEnt("aaaa"), null);
   t.is(await getEnt("bbbb"), null);

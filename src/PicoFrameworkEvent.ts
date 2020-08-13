@@ -51,7 +51,6 @@ export interface PicoFrameworkEvent_reInitRulesetError {
   type: "reInitRulesetError";
   picoId: string;
   rid: string;
-  version: string;
   config?: RulesetConfig;
 }
 

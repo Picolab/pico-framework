@@ -5,7 +5,6 @@ import { Ruleset } from "../../src/Ruleset";
  */
 export const ridCtx: Ruleset = {
   rid: "rid.ctx",
-  version: "0.0.0",
   init(ctx) {
     let lastResult: any;
     return {
@@ -19,8 +18,8 @@ export const ridCtx: Ruleset = {
       query: {
         pico: () => ctx.pico(),
         ruleset: () => ctx.ruleset,
-        _lastResult: () => lastResult
-      }
+        _lastResult: () => lastResult,
+      },
     };
-  }
+  },
 };

@@ -18,7 +18,7 @@ export async function testPicoFramework(rootRulesets: Ruleset[]) {
 
   const pico = await pf.rootPico;
   for (const rs of rootRulesets) {
-    await pico.install(rsReg.get(rs.rid, rs.version));
+    await pico.install(rsReg.get(rs.rid));
   }
   const eci = (await pico.newChannel()).id;
   return { pf, eci, rsReg, genID };

@@ -1,31 +1,22 @@
 import { Ruleset, RulesetLoader } from "../../src";
 
 export function rulesetRegistry() {
-  let rulesets: Ruleset[] = [];
+  let rulesets = new Map<string, Ruleset>();
 
   function add(rs: Ruleset) {
-    rulesets = rulesets.filter(
-      r => !(r.rid === rs.rid && r.version === rs.version)
-    );
-    rulesets.push(rs);
+    rulesets.set(rs.rid, rs);
   }
 
-  function get(rid: string, version: string) {
-    for (const rs of rulesets) {
-      if (rs.rid === rid && rs.version === version) {
-        return rs;
-      }
+  function get(rid: string) {
+    const rs = rulesets.get(rid);
+    if (rs) {
+      return rs;
     }
-    throw new Error(`Ruleset not found: ${rid}@${version}`);
+    throw new Error(`Ruleset not found: ${rid}`);
   }
 
-  const loader: RulesetLoader = (
-    picoId: string,
-    rid: string,
-    version: string,
-    config: any
-  ) => {
-    return get(rid, version);
+  const loader: RulesetLoader = (picoId: string, rid: string, config: any) => {
+    return get(rid);
   };
 
   return { add, get, loader };

@@ -16,14 +16,12 @@ const memdown = require("memdown");
 export type RulesetLoader = (
   picoId: string,
   rid: string,
-  version: string,
   config: RulesetConfig
 ) => Ruleset | Promise<Ruleset>;
 
 export type OnStartupRulesetInitError = (
   picoId: string,
   rid: string,
-  version: string,
   config: RulesetConfig,
   error: any
 ) => void;
@@ -111,22 +109,11 @@ export class PicoFramework {
         throw new Error(`Missing picoId ${picoId}`);
       }
       try {
-        const rs = await this.rulesetLoader(
-          picoId,
-          rid,
-          data.value.version,
-          data.value.config
-        );
+        const rs = await this.rulesetLoader(picoId, rid, data.value.config);
         await pico.install(rs, data.value.config);
       } catch (err) {
         if (this.onStartupRulesetInitError) {
-          this.onStartupRulesetInitError(
-            picoId,
-            rid,
-            data.value.version,
-            data.value.config,
-            err
-          );
+          this.onStartupRulesetInitError(picoId, rid, data.value.config, err);
         } else {
           throw err;
         }
@@ -243,7 +230,6 @@ export class PicoFramework {
           type: "reInitRulesetError",
           picoId: pico.id,
           rid: rs.rid,
-          version: rs.version,
           config: pico.rulesets[rs.rid]?.config,
         });
       });

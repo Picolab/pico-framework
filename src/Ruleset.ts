@@ -4,7 +4,6 @@ import { RulesetContext } from "./RulesetContext";
 
 export interface Ruleset {
   rid: string;
-  version: string;
   init(
     ctx: RulesetContext,
     environment: any
