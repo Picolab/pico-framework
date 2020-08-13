@@ -12,7 +12,8 @@ export type PicoFrameworkEvent =
   | PicoFrameworkEvent_txnError
   | PicoFrameworkEvent_reInitRulesetError
   | PicoFrameworkEvent_eventScheduleAdded
-  | PicoFrameworkEvent_eventScheduleCleared;
+  | PicoFrameworkEvent_eventScheduleCleared
+  | PicoFrameworkEvent_picoDeleted;
 
 export interface PicoFrameworkEvent_startup {
   type: "startup";
@@ -75,4 +76,9 @@ export interface PicoFrameworkEvent_eventScheduleCleared {
   type: "eventScheduleCleared";
   picoId: string;
   txn: PicoTxn_event;
+}
+
+export interface PicoFrameworkEvent_picoDeleted {
+  type: "picoDeleted";
+  picoId: string;
 }

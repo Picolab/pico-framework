@@ -271,6 +271,7 @@ export class PicoFramework {
    */
   removePico(picoId: string) {
     this.picos = this.picos.filter((p) => p.id !== picoId);
+    this.emit({ type: "picoDeleted", picoId });
   }
 
   /**

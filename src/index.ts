@@ -5,27 +5,32 @@ import {
   EventPolicy,
   EventPolicyRule,
   QueryPolicy,
-  QueryPolicyRule
+  QueryPolicyRule,
 } from "./Channel";
+import { NewPicoRuleset, Pico, PicoReadOnly } from "./Pico";
 import { PicoEvent } from "./PicoEvent";
 import {
   PicoFramework,
   PicoFrameworkConf,
-  RulesetLoader
+  RulesetLoader,
 } from "./PicoFramework";
 import { PicoQuery } from "./PicoQuery";
 import { Ruleset, RulesetConfig, RulesetInstance } from "./Ruleset";
-import { RulesetContext } from "./RulesetContext";
+import { createRulesetContext, RulesetContext } from "./RulesetContext";
 
 export {
+  Pico,
   PicoEvent,
   PicoQuery,
+  PicoReadOnly,
   RulesetLoader,
   PicoFramework,
+  NewPicoRuleset,
   RulesetContext,
   PicoFrameworkConf,
   ChannelConfig,
   RulesetInstance,
+  createRulesetContext,
   Ruleset,
   RulesetConfig,
   ChannelReadOnly,
@@ -33,5 +38,5 @@ export {
   EventPolicyRule,
   QueryPolicy,
   QueryPolicyRule,
-  cleanChannelTags
+  cleanChannelTags,
 };
