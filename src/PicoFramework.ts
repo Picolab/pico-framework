@@ -97,14 +97,18 @@ export class PicoFramework {
     await dbRange(this.db, { prefix: ["pico-ruleset"] }, async (data) => {
       const picoId = data.key[1];
       const rid = data.key[2];
+      const config = data.value.config;
       const pico = this.picos.find((pico) => pico.id === picoId);
       if (!pico) {
         throw new Error(`Missing picoId ${picoId}`);
       }
+      // load ruleset map so when rulesets startup they can see all the available ruleset+config on the pico
+      pico.rulesets[rid] = { config, instance: null };
       try {
         const rs = await this.rulesetLoader(picoId, rid, data.value.config);
         toInstall.push({ pico, rs, config: data.value.config });
       } catch (error) {
+        pico.rulesets[rid] = { config, instance: null, startupError: error };
         this.emit({
           type: "startupRulesetInitError",
           picoId,

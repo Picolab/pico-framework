@@ -60,8 +60,11 @@ export class Pico {
   channels: { [eci: string]: Channel } = {};
   rulesets: {
     [rid: string]: {
-      instance: RulesetInstance;
       config: RulesetConfig;
+
+      // instance may be null when it's pending startup
+      instance: RulesetInstance | null;
+      startupError?: any;
     };
   } = {};
 
@@ -340,6 +343,7 @@ export class Pico {
       const ctx = createRulesetContext(this.pf, this, { rid, config });
       const instance = await rs.init(ctx, this.pf.environment);
       this.rulesets[rid].instance = instance;
+      delete this.rulesets[rid].startupError;
     }
   }
 
@@ -492,7 +496,7 @@ export class Pico {
           try {
             while ((this.current = this.schedule.shift())) {
               const rs = this.rulesets[this.current.rid];
-              if (rs && rs.instance.event) {
+              if (rs?.instance?.event) {
                 // must process one event at a time to maintain the pico's single-threaded guarantee
                 const response = await rs.instance.event(
                   this.current.event,
@@ -510,7 +514,7 @@ export class Pico {
           if (!rs) {
             throw new Error(`Pico doesn't have ${txn.query.rid} installed.`);
           }
-          const qfn = rs.instance.query && rs.instance.query[txn.query.name];
+          const qfn = rs?.instance?.query && rs.instance.query[txn.query.name];
           if (!qfn) {
             throw new Error(
               `Ruleset ${txn.query.rid} does not have query function "${txn.query.name}"`
