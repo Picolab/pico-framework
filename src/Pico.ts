@@ -91,7 +91,7 @@ export class Pico {
     return eid;
   }
 
-  eventWait(event: PicoEvent): Promise<any> {
+  eventWait(event: PicoEvent): Promise<{ eid: string; responses: any[] }> {
     const eid = this.pf.genID();
     this.queue.push({
       id: eid,

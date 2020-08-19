@@ -172,7 +172,7 @@ export class PicoFramework {
     return cleanEvent(event);
   }
 
-  async event(event: PicoEvent, fromPicoId?: string): Promise<string | any> {
+  async event(event: PicoEvent, fromPicoId?: string): Promise<string> {
     event = this.cleanEvent(event);
 
     const channel = this.lookupChannel(event.eci);
@@ -184,7 +184,7 @@ export class PicoFramework {
   async eventWait(
     event: PicoEvent,
     fromPicoId?: string
-  ): Promise<string | any> {
+  ): Promise<{ eid: string; responses: any[] }> {
     event = this.cleanEvent(event);
 
     const channel = this.lookupChannel(event.eci);
