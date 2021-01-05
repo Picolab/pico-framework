@@ -55,9 +55,19 @@ export interface NewPicoConfig {
 
 export class Pico {
   id: string;
+
+  /**
+   * The ECI string to the parent pico. Null if it's the root pico.
+   */
   parent: string | null = null;
+
+  /**
+   * The ECI strings to the child pico's
+   */
   children: string[] = [];
+
   channels: { [eci: string]: Channel } = {};
+
   rulesets: {
     [rid: string]: {
       config: RulesetConfig;

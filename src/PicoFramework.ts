@@ -23,11 +23,35 @@ type OnFrameworkEvent = (event: PicoFrameworkEvent) => void;
 
 export interface PicoFrameworkConf {
   rulesetLoader: RulesetLoader;
+
+  /**
+   * Specify how data should be persisted.
+   *
+   * By default it uses memdown
+   */
   leveldown?: AbstractLevelDOWN;
-  genID?: () => string;
-  environment?: any;
+
+  /**
+   * Function that is called on a pico framework event
+   */
   onFrameworkEvent?: OnFrameworkEvent;
+
+  /**
+   * Set true if you want to trust the timestamp on events entering the system.
+   */
   useEventInputTime?: boolean;
+
+  /**
+   * Pass optional data to each ruleset init function
+   */
+  environment?: any;
+
+  /**
+   * Optionally override the function that generates random-unique ids.
+   *
+   * This is mostly intended for testing purposes.
+   */
+  genID?: () => string;
 }
 
 export class PicoFramework {
@@ -172,6 +196,12 @@ export class PicoFramework {
     return cleanEvent(event);
   }
 
+  /**
+   * Signal an event and return the txn id
+   *
+   * @param event
+   * @param fromPicoId This is for detecting family relationships
+   */
   async event(event: PicoEvent, fromPicoId?: string): Promise<string> {
     event = this.cleanEvent(event);
 
@@ -181,6 +211,12 @@ export class PicoFramework {
     return channel.pico.event(event);
   }
 
+  /**
+   * Same as `event` but will wait until it finishes processing
+   *
+   * @param event
+   * @param fromPicoId
+   */
   async eventWait(
     event: PicoEvent,
     fromPicoId?: string
@@ -193,6 +229,13 @@ export class PicoFramework {
     return channel.pico.eventWait(event);
   }
 
+  /**
+   * Same as `event` but will immediately run a query after the event and return the query result
+   *
+   * @param event
+   * @param query
+   * @param fromPicoId
+   */
   async eventQuery(
     event: PicoEvent,
     query: PicoQuery,

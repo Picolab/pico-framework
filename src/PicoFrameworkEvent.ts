@@ -23,6 +23,9 @@ export interface PicoFrameworkEvent_startupDone {
   type: "startupDone";
 }
 
+/**
+ * Error trying to initialize a ruleset during the startup phase
+ */
 export interface PicoFrameworkEvent_startupRulesetInitError {
   type: "startupRulesetInitError";
   picoId: string;

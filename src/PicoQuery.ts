@@ -44,6 +44,6 @@ export function cleanQuery(queryOrig: any): PicoQuery {
     eci: queryOrig.eci.trim(),
     rid: queryOrig.rid.trim(),
     name: queryOrig.name.trim(),
-    args: args
+    args: args,
   };
 }
