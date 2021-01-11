@@ -287,6 +287,7 @@ export class PicoFramework {
           picoId: pico.id,
           rid: rs.rid,
           config: pico.rulesets[rs.rid]?.config,
+          error: err,
         });
       });
     }

@@ -11,6 +11,7 @@ export type PicoFrameworkEvent =
   | PicoFrameworkEvent_txnDone
   | PicoFrameworkEvent_txnError
   | PicoFrameworkEvent_reInitRulesetError
+  | PicoFrameworkEvent_newPicoInstallError
   | PicoFrameworkEvent_eventScheduleAdded
   | PicoFrameworkEvent_eventScheduleCleared
   | PicoFrameworkEvent_picoDeleted;
@@ -65,6 +66,15 @@ export interface PicoFrameworkEvent_reInitRulesetError {
   picoId: string;
   rid: string;
   config?: RulesetConfig;
+  error: any;
+}
+
+export interface PicoFrameworkEvent_newPicoInstallError {
+  type: "newPicoInstallError";
+  picoId: string;
+  rid: string;
+  config?: RulesetConfig;
+  error: any;
 }
 
 export interface PicoFrameworkEvent_eventScheduleAdded {

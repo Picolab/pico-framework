@@ -170,17 +170,6 @@ export class Pico {
       childChannel.toDbPut(),
     ];
 
-    if (conf && conf.rulesets) {
-      for (const rs of conf.rulesets) {
-        const { instance, dbPut } = await child.installBase(rs.rs, rs.config);
-        dbOps.push(dbPut);
-        child.rulesets[rs.rs.rid] = {
-          config: rs.config || {},
-          instance,
-        };
-      }
-    }
-
     try {
       await this.pf.db.batch(dbOps);
     } catch (err) {
@@ -190,6 +179,22 @@ export class Pico {
 
     this.channels[parentChannel.id] = parentChannel;
     this.pf.addPico(child);
+
+    if (conf && conf.rulesets) {
+      for (const rs of conf.rulesets) {
+        try {
+          await child.install(rs.rs, rs.config);
+        } catch (err) {
+          this.pf.emit({
+            type: "newPicoInstallError",
+            picoId: child.id,
+            rid: rs.rs.rid,
+            config: rs.config,
+            error: err,
+          });
+        }
+      }
+    }
 
     return childChannel.id;
   }
