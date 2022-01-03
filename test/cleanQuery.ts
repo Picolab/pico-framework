@@ -1,7 +1,7 @@
 import test from "ava";
 import { cleanQuery } from "../src/PicoQuery";
 
-test("query = cleanQuery(query)", function(t) {
+test("query = cleanQuery(query)", function (t) {
   try {
     cleanQuery(null);
     t.fail("should throw");
@@ -50,13 +50,13 @@ test("query = cleanQuery(query)", function(t) {
     cleanQuery({
       eci: "eci123",
       rid: "foo",
-      name: "bar"
+      name: "bar",
     }),
     {
       eci: "eci123",
       rid: "foo",
       name: "bar",
-      args: {}
+      args: {},
     }
   );
 
@@ -66,13 +66,13 @@ test("query = cleanQuery(query)", function(t) {
     eci: "eci123",
     rid: "foo",
     name: "bar",
-    args: args
+    args: args,
   });
   t.deepEqual(query, {
     eci: "eci123",
     rid: "foo",
     name: "bar",
-    args: args
+    args: args,
   });
   t.deepEqual(query.args, args, "they should match before query.args mutates");
   query.args.what = "blah";
@@ -84,13 +84,13 @@ test("query = cleanQuery(query)", function(t) {
       eci: "  eci123   ",
       rid: "  foo\n ",
       name: "  \t bar  ",
-      args: { " foo ": " don't trim these   " }
+      args: { " foo ": " don't trim these   " },
     }),
     {
       eci: "eci123",
       rid: "foo",
       name: "bar",
-      args: { " foo ": " don't trim these   " }
+      args: { " foo ": " don't trim these   " },
     }
   );
 
@@ -100,13 +100,13 @@ test("query = cleanQuery(query)", function(t) {
       eci: "eci123",
       rid: "foo",
       name: "bar",
-      timestamp: new Date()
+      timestamp: new Date(),
     }),
     {
       eci: "eci123",
       rid: "foo",
       name: "bar",
-      args: {}
+      args: {},
     }
   );
 
@@ -116,13 +116,13 @@ test("query = cleanQuery(query)", function(t) {
       eci: "eci123",
       rid: "foo",
       name: "bar",
-      for_rid: "rid"
+      for_rid: "rid",
     }),
     {
       eci: "eci123",
       rid: "foo",
       name: "bar",
-      args: {}
+      args: {},
     }
   );
 
@@ -131,7 +131,7 @@ test("query = cleanQuery(query)", function(t) {
       eci: "eci123",
       rid: "foo",
       name: "bar",
-      args
+      args,
     }).args;
   }
 
@@ -146,6 +146,7 @@ test("query = cleanQuery(query)", function(t) {
   const a = { one: 2 };
   const b = cleanArgs(a);
   t.false(a === b, "must be a clone");
+  // @ts-ignore
   t.deepEqual(a, b);
   b.extra = 3;
   t.notDeepEqual(a, b);
@@ -153,7 +154,7 @@ test("query = cleanQuery(query)", function(t) {
   t.deepEqual(
     cleanArgs({
       one: 2,
-      three: function() {}
+      three: function () {},
     }),
     { one: 2 },
     "remove non-jsonable things"
@@ -165,7 +166,7 @@ test("query = cleanQuery(query)", function(t) {
     "args normalize to JSON null's"
   );
 
-  (function(a, b) {
+  (function (a, b) {
     t.deepEqual(
       cleanArgs(arguments),
       { "0": "foo", "1": "bar" },

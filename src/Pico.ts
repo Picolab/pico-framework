@@ -423,7 +423,7 @@ export class Pico {
     let data: any;
     try {
       data = await this.pf.db.get(["entvar", this.id, rid, name]);
-    } catch (err) {
+    } catch (err: any) {
       if (err.notFound) {
         return null;
       }

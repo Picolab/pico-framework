@@ -160,7 +160,7 @@ export class PicoFramework {
     let rootId: string | null;
     try {
       rootId = await this.db.get(["root-pico"]);
-    } catch (err) {
+    } catch (err: any) {
       if (err.notFound) {
         rootId = null;
       } else {
