@@ -9,8 +9,8 @@ jobs:
       fail-fast: true
       matrix:
         node-version:
-          - lts/* # LTS version
-          - "17" # latest version
+          - lts/*
+          - latest
         os: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
@@ -20,5 +20,5 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - run: npm i
+      - run: npm ci
       - run: npm test
