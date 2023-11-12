@@ -1,13 +1,14 @@
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
+import { mkdb } from "./helpers/mkdb";
 
 test("clearSchedule", async function (t) {
   let log: string[] = [];
 
   const rsReg = rulesetRegistry();
 
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   rsReg.add({
     rid: "rid.A",
     init(ctx) {

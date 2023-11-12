@@ -1,10 +1,11 @@
 import test from "ava";
 import { PicoFramework, Ruleset } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
+import { mkdb } from "./helpers/mkdb";
 
 test("reInitRuleset", async function (t) {
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   await pf.start();
   const pico = await pf.rootPico;
   const eci = (await pico.newChannel()).id;

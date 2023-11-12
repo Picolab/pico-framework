@@ -80,14 +80,17 @@ export class Pico {
 
   private queue: PicoQueue;
 
-  constructor(private pf: PicoFramework, id: string) {
+  constructor(
+    private pf: PicoFramework,
+    id: string,
+  ) {
     this.id = id;
     this.channels[id] = new Channel(this, id, { tags: ["system", "self"] }, id);
 
     this.queue = new PicoQueue(
       this.id,
       this.doTxn.bind(this),
-      (ev: PicoFrameworkEvent) => this.pf.emit(ev)
+      (ev: PicoFrameworkEvent) => this.pf.emit(ev),
     );
   }
 
@@ -152,13 +155,13 @@ export class Pico {
     const child = new Pico(this.pf, this.pf.genID());
     const parentChannel = this.newChannelBase(
       { tags: ["system", "parent"] },
-      child.id
+      child.id,
     );
     child.parent = parentChannel.id;
 
     const childChannel = child.newChannelBase(
       { tags: ["system", "child"] },
-      this.id
+      this.id,
     );
     child.channels[childChannel.id] = childChannel;
     this.children.push(childChannel.id);
@@ -304,7 +307,7 @@ export class Pico {
 
   async newChannel(
     conf?: ChannelConfig,
-    familyChannelPicoID?: string
+    familyChannelPicoID?: string,
   ): Promise<Channel> {
     const chann = this.newChannelBase(conf, familyChannelPicoID);
     await this.pf.db.batch([chann.toDbPut()]);
@@ -314,7 +317,7 @@ export class Pico {
 
   private newChannelBase(
     conf?: ChannelConfig,
-    familyChannelPicoID?: string
+    familyChannelPicoID?: string,
   ): Channel {
     const chann = new Channel(this, this.pf.genID(), conf, familyChannelPicoID);
     return chann;
@@ -364,7 +367,7 @@ export class Pico {
 
   private async installBase(
     rs: Ruleset,
-    config: RulesetConfig = {}
+    config: RulesetConfig = {},
   ): Promise<{ instance: RulesetInstance; dbPut: LevelBatch }> {
     // even if we already have that rid installed, we need to init again
     // b/c the configuration may have changed
@@ -403,7 +406,7 @@ export class Pico {
           key: data.key,
         };
         return delEnt;
-      }
+      },
     );
     ops.push({
       type: "del",
@@ -454,7 +457,7 @@ export class Pico {
     domain: string,
     name: string,
     attrs: PicoEventPayload["attrs"],
-    forRid?: string
+    forRid?: string,
   ) {
     const event = cleanEvent({
       eci: (this.current && this.current.event.eci) || "[raise]",
@@ -515,7 +518,7 @@ export class Pico {
                 // must process one event at a time to maintain the pico's single-threaded guarantee
                 const response = await rs.instance.event(
                   this.current.event,
-                  eid
+                  eid,
                 );
                 responses.push(response);
               }
@@ -532,7 +535,7 @@ export class Pico {
           const qfn = rs?.instance?.query && rs.instance.query[txn.query.name];
           if (!qfn) {
             throw new Error(
-              `Ruleset ${txn.query.rid} does not have query function "${txn.query.name}"`
+              `Ruleset ${txn.query.rid} does not have query function "${txn.query.name}"`,
             );
           }
           const data = await qfn(txn.query, txn.id);

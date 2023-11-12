@@ -1,6 +1,7 @@
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
+import { mkdb } from "./helpers/mkdb";
 
 test("ruleset - eid, qid", async function (t) {
   let log: any[] = [];
@@ -11,7 +12,11 @@ test("ruleset - eid, qid", async function (t) {
   }
 
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader, genID });
+  const pf = new PicoFramework({
+    db: mkdb(),
+    rulesetLoader: rsReg.loader,
+    genID,
+  });
   rsReg.add({
     rid: "rid.A",
     init(ctx, env) {
@@ -73,7 +78,7 @@ test("ruleset - eid, qid", async function (t) {
 
 test("ruleset - responses", async function (t) {
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   rsReg.add({
     rid: "rid.A",
     init(ctx, env) {

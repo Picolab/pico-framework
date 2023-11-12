@@ -3,11 +3,11 @@ import { PicoFramework } from "../src";
 import { dbRange } from "../src/dbRange";
 import { jsonDumpPico } from "./helpers/inspect";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
-const memdown = require("memdown");
+import { mkdb } from "./helpers/mkdb";
 
 test("persistent", async function (t) {
   // re-use the db on each restart
-  const down = memdown();
+  const db = mkdb();
 
   let nextId = 0;
   function genID() {
@@ -24,8 +24,8 @@ test("persistent", async function (t) {
 
   async function restart(): Promise<PicoFramework> {
     const pf = new PicoFramework({
+      db: db,
       rulesetLoader: rsReg.loader,
-      leveldown: down,
       genID,
     });
     await pf.start();
