@@ -17,9 +17,12 @@ import {
 import { PicoQuery } from "./PicoQuery";
 import { Ruleset, RulesetConfig, RulesetInstance } from "./Ruleset";
 import { createRulesetContext, RulesetContext } from "./RulesetContext";
+import { PicoDb, PicoDbKey } from "./utils";
 
 export {
   Pico,
+  PicoDb,
+  PicoDbKey,
   PicoEvent,
   PicoQuery,
   PicoReadOnly,
