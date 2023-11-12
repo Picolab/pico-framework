@@ -1,6 +1,7 @@
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
+import { mkdb } from "./helpers/mkdb";
 
 test("rulesetEnvironment", async function (t) {
   let lastInit: any;
@@ -8,7 +9,11 @@ test("rulesetEnvironment", async function (t) {
   const config = { some: "config" };
 
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader, environment });
+  const pf = new PicoFramework({
+    db: mkdb(),
+    rulesetLoader: rsReg.loader,
+    environment,
+  });
   rsReg.add({
     rid: "rid.A",
     init(ctx, env) {

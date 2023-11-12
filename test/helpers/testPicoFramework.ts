@@ -1,6 +1,7 @@
 import { PicoFramework } from "../../src";
 import { Ruleset } from "../../src/Ruleset";
 import { rulesetRegistry } from "./rulesetRegistry";
+import { mkdb } from "./mkdb";
 
 export async function testPicoFramework(rootRulesets: Ruleset[]) {
   let nextId = 0;
@@ -9,7 +10,11 @@ export async function testPicoFramework(rootRulesets: Ruleset[]) {
   }
 
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader, genID });
+  const pf = new PicoFramework({
+    db: mkdb(),
+    rulesetLoader: rsReg.loader,
+    genID,
+  });
   await pf.start();
 
   for (const rs of rootRulesets) {

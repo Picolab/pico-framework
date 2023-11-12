@@ -1,7 +1,7 @@
 import test from "ava";
 import { PicoFramework, Ruleset } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
-const memdown = require("memdown");
+import { mkdb } from "./helpers/mkdb";
 
 test("rulesetStartup", async function (t) {
   let errorOnInit = false;
@@ -16,9 +16,9 @@ test("rulesetStartup", async function (t) {
     },
   };
 
-  const down = memdown();
+  const down = mkdb();
   const rsReg = rulesetRegistry();
-  let pf = new PicoFramework({ rulesetLoader: rsReg.loader, leveldown: down });
+  let pf = new PicoFramework({ rulesetLoader: rsReg.loader, db: down });
   rsReg.add(rs);
   await pf.start();
   const pico = await pf.rootPico;
@@ -29,7 +29,7 @@ test("rulesetStartup", async function (t) {
   let swallowedErrors: string[] = [];
   pf = new PicoFramework({
     rulesetLoader: rsReg.loader,
-    leveldown: down,
+    db: down,
     onFrameworkEvent: (e) => {
       switch (e.type) {
         case "startupRulesetInitError":

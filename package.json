@@ -32,28 +32,25 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
-    "prepublish": "npm run build",
+    "prepare": "npm run build",
     "build": "rm -rf dist && tsc",
-    "test": "nyc ava"
+    "test": "ava reset-cache && nyc ava"
   },
   "dependencies": {
-    "charwise": "^3.0.1",
+    "abstract-level": "^1.0.3",
     "cuid": "^2.1.8",
-    "encoding-down": "^6.3.0",
-    "level-json-coerce-null": "^1.0.1",
-    "levelup": "^4.4.0",
     "lodash": "^4.17.19",
-    "memdown": "^5.1.0",
-    "select-when": "^0.1.4"
+    "select-when": "^0.1.9"
   },
   "devDependencies": {
-    "@types/abstract-leveldown": "^5.0.1",
-    "@types/levelup": "^4.3.0",
-    "@types/lodash": "^4.14.157",
-    "ava": "^4.0.0",
+    "@types/lodash": "^4.14.201",
+    "ava": "^5.3.1",
+    "charwise": "^3.0.1",
+    "level-json-coerce-null": "^1.0.1",
+    "memory-level": "^1.0.0",
     "nyc": "^15.1.0",
     "ts-node": "^10.4.0",
-    "typescript": "^4.5.4"
+    "typescript": "^5.2.2"
   },
   "ava": {
     "extensions": [

@@ -1,5 +1,7 @@
 # pico-framework
 
+[![Build Status](https://github.com/Picolab/pico-framework/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/Picolab/pico-framework/actions/workflows/test.yml)
+
 A framework for building actor-based, people-centric systems. (pico = PersIstent Compute Objects)
 
 ## Why Picos?
@@ -19,7 +21,7 @@ It handles the building blocks of a Pico based system.
   - Rulesets
   - What the ruleset code is allowed to do to a pico i.e. sandboxing
 
-The pico-framework also handles persistence of the pico objects. You can provided the persistance layer via an implementation of [abstract-leveldown](https://github.com/Level/abstract-leveldown)
+The pico-framework also handles persistence of the pico objects. You simply provide the persistence layer via an implementation of [abstract-level](https://github.com/Level/abstract-level).
 
 ## Contributing
 

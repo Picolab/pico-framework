@@ -2,10 +2,11 @@ import test from "ava";
 import { isCuid } from "cuid";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
+import { mkdb } from "./helpers/mkdb";
 
 test("hello world", async function (t) {
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   await pf.start();
 
   rsReg.add({
@@ -43,7 +44,7 @@ test("hello world", async function (t) {
       name: "hello",
       args: { name: "Bob" },
     }),
-    "Hello Bob!"
+    "Hello Bob!",
   );
 
   t.is(
@@ -53,7 +54,7 @@ test("hello world", async function (t) {
       name: "status",
       args: {},
     }),
-    undefined
+    undefined,
   );
   const eid = await pf.event({
     eci,
@@ -71,7 +72,7 @@ test("hello world", async function (t) {
       name: "status",
       args: {},
     }),
-    "Said hello to Ed with an event."
+    "Said hello to Ed with an event.",
   );
 
   t.is(
@@ -88,9 +89,9 @@ test("hello world", async function (t) {
         rid: "rid.hello",
         name: "status",
         args: {},
-      }
+      },
     ),
-    "Said hello to Jim with an event."
+    "Said hello to Jim with an event.",
   );
 
   let err = await t.throwsAsync(
@@ -99,11 +100,11 @@ test("hello world", async function (t) {
       rid: "rid.hello",
       name: "blah",
       args: {},
-    })
+    }),
   );
   t.is(
     err + "",
-    'Error: Ruleset rid.hello does not have query function "blah"'
+    'Error: Ruleset rid.hello does not have query function "blah"',
   );
 
   err = await t.throwsAsync(
@@ -112,7 +113,7 @@ test("hello world", async function (t) {
       rid: "rid.hello",
       name: "blah",
       args: {},
-    })
+    }),
   );
   t.is(err + "", "Error: ECI not found notreal");
 
@@ -130,15 +131,15 @@ test("hello world", async function (t) {
         rid: "rid.hello",
         name: "status",
         args: {},
-      }
-    )
+      },
+    ),
   );
   t.is(err + "", "Error: eventQuery must use the same channel");
 });
 
 test("pico can pass configuration to rulesets", async function (t) {
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   await pf.start();
 
   rsReg.add({
@@ -169,7 +170,7 @@ test("pico can pass configuration to rulesets", async function (t) {
       name: "name",
       args: {},
     }),
-    "default name"
+    "default name",
   );
 
   await pico.install(rsReg.get("some.rid"), { name: "Ove" });
@@ -181,13 +182,13 @@ test("pico can pass configuration to rulesets", async function (t) {
       name: "name",
       args: {},
     }),
-    "Ove"
+    "Ove",
   );
 });
 
 test("check channel policies", async function (t) {
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   await pf.start();
 
   rsReg.add({

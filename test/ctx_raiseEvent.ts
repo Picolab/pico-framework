@@ -1,10 +1,11 @@
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";
+import { mkdb } from "./helpers/mkdb";
 
 test("raiseEvent", async function (t) {
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   await pf.start();
 
   rsReg.add({
@@ -55,7 +56,7 @@ test("raiseEvent", async function (t) {
       rid: "rid.raise",
       name: "history",
       args: {},
-    }
+    },
   );
 
   t.is(history.join("|"), "doing raise|got the raise");
@@ -65,7 +66,7 @@ test("raiseEvent should use cleanEvent", async function (t) {
   const history: any[] = [];
   let ctx: any;
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   await pf.start();
   rsReg.add({
     rid: "rid.raise",
@@ -86,8 +87,8 @@ test("raiseEvent should use cleanEvent", async function (t) {
             default:
               history.push(
                 `${event.eci}/${event.domain}:${event.name}?${JSON.stringify(
-                  event.data.attrs
-                )}`
+                  event.data.attrs,
+                )}`,
               );
           }
         },
@@ -122,7 +123,7 @@ test("raiseEvent - forRid", async function (t) {
   let history: string[] = [];
 
   const rsReg = rulesetRegistry();
-  const pf = new PicoFramework({ rulesetLoader: rsReg.loader });
+  const pf = new PicoFramework({ db: mkdb(), rulesetLoader: rsReg.loader });
   await pf.start();
   rsReg.add({
     rid: "rid.A",

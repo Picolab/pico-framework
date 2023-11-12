@@ -1,6 +1,5 @@
-import { AbstractLevelDOWN } from "abstract-leveldown";
 import * as cuid from "cuid";
-import { default as level, LevelUp } from "levelup";
+import { PicoDb } from "./utils";
 import { Channel } from "./Channel";
 import { dbRange } from "./dbRange";
 import { Pico } from "./Pico";
@@ -8,15 +7,11 @@ import { cleanEvent, PicoEvent } from "./PicoEvent";
 import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
 import { Ruleset, RulesetConfig } from "./Ruleset";
-const charwise = require("charwise");
-const encode = require("encoding-down");
-const safeJsonCodec = require("level-json-coerce-null");
-const memdown = require("memdown");
 
 export type RulesetLoader = (
   picoId: string,
   rid: string,
-  config: RulesetConfig
+  config: RulesetConfig,
 ) => Ruleset | Promise<Ruleset>;
 
 type OnFrameworkEvent = (event: PicoFrameworkEvent) => void;
@@ -26,10 +21,8 @@ export interface PicoFrameworkConf {
 
   /**
    * Specify how data should be persisted.
-   *
-   * By default it uses memdown
    */
-  leveldown?: AbstractLevelDOWN;
+  db: PicoDb;
 
   /**
    * Function that is called on a pico framework event
@@ -55,7 +48,7 @@ export interface PicoFrameworkConf {
 }
 
 export class PicoFramework {
-  db: LevelUp;
+  db: PicoDb;
 
   private rootPico_?: Pico;
   public get rootPico(): Pico {
@@ -82,12 +75,7 @@ export class PicoFramework {
   private onFrameworkEvent?: OnFrameworkEvent;
 
   constructor(conf: PicoFrameworkConf) {
-    this.db = level(
-      encode((conf && conf.leveldown) || memdown(), {
-        keyEncoding: charwise,
-        valueEncoding: safeJsonCodec,
-      })
-    );
+    this.db = conf.db;
     this.rulesetLoader = conf && conf.rulesetLoader;
     this.genID = (conf && conf.genID) || cuid;
     this.environment = conf && conf.environment;
@@ -219,7 +207,7 @@ export class PicoFramework {
    */
   async eventWait(
     event: PicoEvent,
-    fromPicoId?: string
+    fromPicoId?: string,
   ): Promise<{ eid: string; responses: any[] }> {
     event = this.cleanEvent(event);
 
@@ -239,7 +227,7 @@ export class PicoFramework {
   async eventQuery(
     event: PicoEvent,
     query: PicoQuery,
-    fromPicoId?: string
+    fromPicoId?: string,
   ): Promise<any> {
     event = this.cleanEvent(event);
     query = cleanQuery(query);
