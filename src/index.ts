@@ -7,7 +7,7 @@ import {
   QueryPolicy,
   QueryPolicyRule,
 } from "./Channel";
-import { NewPicoRuleset, Pico, PicoReadOnly } from "./Pico";
+import { NewPicoConfig, NewPicoRuleset, Pico, PicoReadOnly } from "./Pico";
 import { PicoEvent } from "./PicoEvent";
 import {
   PicoFramework,
@@ -28,6 +28,7 @@ export {
   PicoReadOnly,
   RulesetLoader,
   PicoFramework,
+  NewPicoConfig,
   NewPicoRuleset,
   RulesetContext,
   PicoFrameworkConf,

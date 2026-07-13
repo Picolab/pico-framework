@@ -1,8 +1,8 @@
 import * as cuid from "cuid";
-import { PicoDb } from "./utils";
+import { LevelBatch, PicoDb } from "./utils";
 import { Channel } from "./Channel";
 import { dbRange } from "./dbRange";
-import { Pico } from "./Pico";
+import { NewPicoConfig, Pico } from "./Pico";
 import { cleanEvent, PicoEvent } from "./PicoEvent";
 import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
@@ -45,17 +45,43 @@ export interface PicoFrameworkConf {
    * This is mostly intended for testing purposes.
    */
   genID?: () => string;
+
+  /**
+   * When true (the default), startup auto-creates a single root pico if the
+   * engine has none — preserving the historical single-root behavior.
+   *
+   * Set to false to boot with **zero** roots and create them on demand via
+   * {@link PicoFramework.createRootPico} (e.g. the pico-engine creates a root
+   * per passkey registration). Existing engines that already persisted a root
+   * are unaffected either way.
+   */
+  autoCreateRootPico?: boolean;
 }
 
 export class PicoFramework {
   db: PicoDb;
 
   private rootPico_?: Pico;
+  /**
+   * @deprecated The engine now supports 0..N root picos. This returns the
+   * "primary" root — the one persisted under `["root-pico"]` for back-compat —
+   * and throws when there is none. Prefer {@link rootPicos} / {@link createRootPico}.
+   */
   public get rootPico(): Pico {
     if (!this.rootPico_) {
-      throw new Error("rootPico has not started up yet");
+      throw new Error(
+        "No primary root pico. The engine boots with zero roots; create one with createRootPico().",
+      );
     }
     return this.rootPico_;
+  }
+
+  /**
+   * All root picos, i.e. every pico with no parent.
+   * The engine may have zero, one, or many.
+   */
+  public rootPicos(): Pico[] {
+    return this.picos.filter((pico) => pico.parent === null);
   }
 
   private picos: Pico[] = [];
@@ -69,6 +95,8 @@ export class PicoFramework {
 
   private useEventInputTime: boolean = false;
 
+  private autoCreateRootPico: boolean = true;
+
   /**
    * not using EventEmitter b/c I want it typed checked and limited.
    */
@@ -81,6 +109,7 @@ export class PicoFramework {
     this.environment = conf && conf.environment;
     this.onFrameworkEvent = conf && conf.onFrameworkEvent;
     this.useEventInputTime = !!(conf && conf.useEventInputTime);
+    this.autoCreateRootPico = !(conf && conf.autoCreateRootPico === false);
 
     this.startupP = this.startup();
   }
@@ -145,6 +174,8 @@ export class PicoFramework {
       }
     }
 
+    // Older engines persisted a single "primary" root under `["root-pico"]`.
+    // If present, expose it via the (deprecated) `rootPico` getter.
     let rootId: string | null;
     try {
       rootId = await this.db.get(["root-pico"]);
@@ -160,14 +191,11 @@ export class PicoFramework {
       if (!this.rootPico_) {
         throw new Error(`Bad root pico ID ${rootId}`);
       }
-    } else {
-      const pico = new Pico(this, this.genID());
-      await this.db.batch([
-        pico.toDbPut(),
-        { type: "put", key: ["root-pico"], value: pico.id },
-      ]);
-      this.rootPico_ = pico;
-      this.picos.push(pico);
+    } else if (this.autoCreateRootPico) {
+      // Default (back-compat): auto-create one root when the engine has none.
+      // Disable via `autoCreateRootPico: false` to boot with zero roots and
+      // create them on demand with `createRootPico`.
+      await this.createRootPico();
     }
 
     this.emit({ type: "startupDone" });
@@ -175,6 +203,48 @@ export class PicoFramework {
 
   start() {
     return this.startupP;
+  }
+
+  /**
+   * Create a new parentless (root) pico. An engine may have any number of roots.
+   * Persists the pico, registers it, optionally installs rulesets, and returns it.
+   *
+   * The first root created on an engine that has no primary root yet is also
+   * recorded under `["root-pico"]`, so the (deprecated) {@link rootPico} getter
+   * and existing single-root consumers keep working during migration.
+   */
+  async createRootPico(conf?: NewPicoConfig): Promise<Pico> {
+    const pico = new Pico(this, this.genID());
+
+    const isFirstPrimary = !this.rootPico_;
+    const dbOps: LevelBatch[] = [pico.toDbPut()];
+    if (isFirstPrimary) {
+      dbOps.push({ type: "put", key: ["root-pico"], value: pico.id });
+    }
+    await this.db.batch(dbOps);
+
+    this.addPico(pico);
+    if (isFirstPrimary) {
+      this.rootPico_ = pico;
+    }
+
+    if (conf && conf.rulesets) {
+      for (const rs of conf.rulesets) {
+        try {
+          await pico.install(rs.rs, rs.config);
+        } catch (error) {
+          this.emit({
+            type: "newPicoInstallError",
+            picoId: pico.id,
+            rid: rs.rs.rid,
+            config: rs.config,
+            error,
+          });
+        }
+      }
+    }
+
+    return pico;
   }
 
   cleanEvent(event: PicoEvent): PicoEvent {
