@@ -377,6 +377,13 @@ export class PicoFramework {
   }
 
   /**
+   * All picos currently loaded in memory.
+   */
+  public loadedPicos(): readonly Pico[] {
+    return this.picos;
+  }
+
+  /**
    * Return the number of pico's
    * Useful for testing
    */
