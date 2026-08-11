@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.1 - (unreleased)
+## 0.8.1 - August 11, 2026
 
 * **Custom channel id at creation** — optional `ChannelConfig.id` on `Pico.newChannel` for operator-chosen ECIs (validated: min 12 chars, `[a-zA-Z0-9_-]` only, engine-wide uniqueness including pico ids). Family/system channels still auto-generate ids.
 * **`PicoFramework.eciIsTaken(eci)`** — engine-wide check for channel or pico id collision.
