@@ -1,3 +1,7 @@
+/**
+ * Query error propagation from rulesets.
+ */
+
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";

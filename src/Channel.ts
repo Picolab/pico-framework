@@ -4,10 +4,36 @@ import { PicoEvent } from "./PicoEvent";
 import { PicoQuery } from "./PicoQuery";
 import { isNotStringOrBlank, LevelBatch } from "./utils";
 
+export const CUSTOM_CHANNEL_ID_MIN_LENGTH = 12;
+export const CUSTOM_CHANNEL_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
+
 export interface ChannelConfig {
+  /** Optional id for manual channel creation; defaults to genID() when omitted. */
+  id?: string;
   tags?: string[];
   eventPolicy?: EventPolicy;
   queryPolicy?: QueryPolicy;
+}
+
+export function validateCustomChannelId(id: unknown): string {
+  if (typeof id !== "string") {
+    throw new TypeError("Channel id must be a string.");
+  }
+  const trimmed = id.trim();
+  if (trimmed.length === 0) {
+    throw new Error("Channel id cannot be empty.");
+  }
+  if (trimmed.length < CUSTOM_CHANNEL_ID_MIN_LENGTH) {
+    throw new Error(
+      `Channel id must be at least ${CUSTOM_CHANNEL_ID_MIN_LENGTH} characters.`,
+    );
+  }
+  if (!CUSTOM_CHANNEL_ID_PATTERN.test(trimmed)) {
+    throw new Error(
+      "Channel id may only contain letters, digits, hyphen, and underscore.",
+    );
+  }
+  return trimmed;
 }
 
 export interface ChannelReadOnly {
@@ -154,46 +180,70 @@ export class Channel {
   }
 }
 
-export function assertEventPolicy(eventPolicy: EventPolicy, event: PicoEvent) {
+export function allowsEventPolicy(
+  eventPolicy: EventPolicy,
+  event: Pick<PicoEvent, "domain" | "name">
+): boolean {
   for (const p of eventPolicy.deny) {
     if (p.domain === "*" || p.domain === event.domain) {
       if (p.name === "*" || p.name === event.name) {
-        throw new Error("Denied by channel policy");
+        return false;
       }
     }
   }
-  let isAllowed = false;
   for (const p of eventPolicy.allow) {
     if (p.domain === "*" || p.domain === event.domain) {
       if (p.name === "*" || p.name === event.name) {
-        isAllowed = true;
-        break;
+        return true;
       }
     }
   }
-  if (!isAllowed) {
+  return false;
+}
+
+export function allowsQueryPolicy(
+  queryPolicy: QueryPolicy,
+  query: Pick<PicoQuery, "rid" | "name">
+): boolean {
+  for (const p of queryPolicy.deny) {
+    if (p.rid === "*" || p.rid === query.rid) {
+      if (p.name === "*" || p.name === query.name) {
+        return false;
+      }
+    }
+  }
+  for (const p of queryPolicy.allow) {
+    if (p.rid === "*" || p.rid === query.rid) {
+      if (p.name === "*" || p.name === query.name) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+export function assertEventPolicy(eventPolicy: EventPolicy, event: PicoEvent) {
+  if (!allowsEventPolicy(eventPolicy, event)) {
+    for (const p of eventPolicy.deny) {
+      if (p.domain === "*" || p.domain === event.domain) {
+        if (p.name === "*" || p.name === event.name) {
+          throw new Error("Denied by channel policy");
+        }
+      }
+    }
     throw new Error("Not allowed by channel policy");
   }
 }
 
 export function assertQueryPolicy(queryPolicy: QueryPolicy, query: PicoQuery) {
-  for (const p of queryPolicy.deny) {
-    if (p.rid === "*" || p.rid === query.rid) {
-      if (p.name === "*" || p.name === query.name) {
-        throw new Error("Denied by channel policy");
+  if (!allowsQueryPolicy(queryPolicy, query)) {
+    for (const p of queryPolicy.deny) {
+      if (p.rid === "*" || p.rid === query.rid) {
+        if (p.name === "*" || p.name === query.name) {
+          throw new Error("Denied by channel policy");
+        }
       }
     }
-  }
-  let isAllowed = false;
-  for (const p of queryPolicy.allow) {
-    if (p.rid === "*" || p.rid === query.rid) {
-      if (p.name === "*" || p.name === query.name) {
-        isAllowed = true;
-        break;
-      }
-    }
-  }
-  if (!isAllowed) {
     throw new Error("Not allowed by channel policy");
   }
 }

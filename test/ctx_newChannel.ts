@@ -1,3 +1,7 @@
+/**
+ * Ruleset ctx API: newChannel.
+ */
+
 import * as _ from "lodash";
 import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
@@ -7,13 +11,10 @@ test("ctx.newChannel", async function(t) {
 
   const chann = await event("newChannel", [
     {
-      id: "try-to-overwride",
-      familyChannelPicoID: "try-to-set-with-conf",
       tags: ["some", "thing"],
       eventPolicy: { allow: [], deny: [] },
       queryPolicy: { allow: [], deny: [] }
-    },
-    "try-to-set-family-pico-id"
+    }
   ]);
 
   t.deepEqual(chann, {

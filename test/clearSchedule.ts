@@ -1,3 +1,7 @@
+/**
+ * Scheduled job clearing when picos or rulesets change.
+ */
+
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";

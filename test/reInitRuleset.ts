@@ -1,3 +1,7 @@
+/**
+ * Ruleset re-initialization after code changes.
+ */
+
 import test from "ava";
 import { PicoFramework, Ruleset } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";

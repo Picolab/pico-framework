@@ -1,5 +1,12 @@
+/**
+ * Channel policy assertion helpers: assertEventPolicy, assertQueryPolicy,
+ * allows*.
+ */
+
 import test from "ava";
 import {
+  allowsEventPolicy,
+  allowsQueryPolicy,
   assertEventPolicy,
   assertQueryPolicy,
   EventPolicy,
@@ -95,4 +102,44 @@ test("policy = assertQueryPolicy(policy)", function(t) {
   });
   t.is(policy("foo", "bar"), "Error: Not allowed by channel policy");
   t.is(policy("admin", "bar"), "Error: Denied by channel policy");
+});
+
+test("allowsEventPolicy returns boolean without throwing", function(t) {
+  const allowAll: EventPolicy = {
+    allow: [{ domain: "*", name: "*" }],
+    deny: []
+  };
+  t.true(allowsEventPolicy(allowAll, { domain: "foo", name: "bar" }));
+  t.false(
+    allowsEventPolicy({ allow: [], deny: [] }, { domain: "foo", name: "bar" })
+  );
+  t.false(
+    allowsEventPolicy(
+      {
+        allow: [{ domain: "*", name: "*" }],
+        deny: [{ domain: "foo", name: "bar" }]
+      },
+      { domain: "foo", name: "bar" }
+    )
+  );
+});
+
+test("allowsQueryPolicy returns boolean without throwing", function(t) {
+  const allowAll: QueryPolicy = {
+    allow: [{ rid: "*", name: "*" }],
+    deny: []
+  };
+  t.true(allowsQueryPolicy(allowAll, { rid: "foo", name: "bar" }));
+  t.false(
+    allowsQueryPolicy({ allow: [], deny: [] }, { rid: "foo", name: "bar" })
+  );
+  t.false(
+    allowsQueryPolicy(
+      {
+        allow: [{ rid: "*", name: "*" }],
+        deny: [{ rid: "foo", name: "bar" }]
+      },
+      { rid: "foo", name: "bar" }
+    )
+  );
 });

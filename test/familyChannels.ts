@@ -1,3 +1,7 @@
+/**
+ * Family channel inheritance and ctx.newChannel behavior.
+ */
+
 import test from "ava";
 import { PicoEvent } from "../src/PicoEvent";
 import { PicoQuery } from "../src/PicoQuery";

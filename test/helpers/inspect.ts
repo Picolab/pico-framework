@@ -1,3 +1,7 @@
+/**
+ * JSON dump helpers to inspect in-memory pico structure after reload.
+ */
+
 import { PicoFramework } from "../../src";
 import { Pico } from "../../src/Pico";
 import { dbRange } from "../../src/dbRange";

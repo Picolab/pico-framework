@@ -1,3 +1,7 @@
+/**
+ * Multi-root mesh: boot, auto-create, isolation, and independent child trees.
+ */
+
 import test from "ava";
 import { PicoFramework, Ruleset } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";

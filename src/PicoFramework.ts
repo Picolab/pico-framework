@@ -319,6 +319,19 @@ export class PicoFramework {
     return channel.pico.query(query);
   }
 
+  /** True when `eci` is a pico id or an existing channel id anywhere in the engine. */
+  eciIsTaken(eci: string): boolean {
+    for (const pico of this.picos) {
+      if (pico.id === eci) {
+        return true;
+      }
+      if (Object.prototype.hasOwnProperty.call(pico.channels, eci)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   lookupChannel(eci: string): Channel {
     for (const pico of this.picos) {
       if (pico.channels[eci]) {

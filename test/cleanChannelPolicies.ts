@@ -1,3 +1,7 @@
+/**
+ * Channel policy normalization: cleanEventPolicy and cleanQueryPolicy.
+ */
+
 import test from "ava";
 import { cleanEventPolicy, cleanQueryPolicy } from "../src/Channel";
 

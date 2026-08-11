@@ -1,3 +1,7 @@
+/**
+ * PicoFramework integration: hello world, ruleset config, and channel policies.
+ */
+
 import test from "ava";
 import { isCuid } from "cuid";
 import { PicoFramework } from "../src";

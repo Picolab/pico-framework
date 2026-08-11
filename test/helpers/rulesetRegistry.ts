@@ -1,3 +1,7 @@
+/**
+ * Shared test ruleset registry for pico-framework tests.
+ */
+
 import { Ruleset, RulesetLoader } from "../../src";
 
 export function rulesetRegistry() {

@@ -1,3 +1,7 @@
+/**
+ * Ruleset environment variables and ent persistence.
+ */
+
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";

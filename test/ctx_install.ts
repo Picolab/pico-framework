@@ -1,3 +1,7 @@
+/**
+ * Ruleset ctx API: install.
+ */
+
 import test from "ava";
 import { RulesetInstance } from "../src/Ruleset";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";

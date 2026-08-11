@@ -1,3 +1,7 @@
+/**
+ * Test ruleset exposing ctx API for unit tests.
+ */
+
 import { Ruleset } from "../../src/Ruleset";
 
 /**

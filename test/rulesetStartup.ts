@@ -1,3 +1,7 @@
+/**
+ * Ruleset startup hooks and initialization order.
+ */
+
 import test from "ava";
 import { PicoFramework, Ruleset } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";

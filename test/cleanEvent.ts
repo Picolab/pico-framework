@@ -1,3 +1,7 @@
+/**
+ * PicoEvent normalization via cleanEvent.
+ */
+
 import test from "ava";
 import { cleanEvent } from "../src/PicoEvent";
 

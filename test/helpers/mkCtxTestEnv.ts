@@ -1,3 +1,7 @@
+/**
+ * Minimal ctx API test environment with ridCtx ruleset.
+ */
+
 import { ridCtx } from "./ridCtx";
 import { testPicoFramework } from "./testPicoFramework";
 

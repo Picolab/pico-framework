@@ -1,3 +1,7 @@
+/**
+ * Ruleset ctx API: putChannel.
+ */
+
 import * as _ from "lodash";
 import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";

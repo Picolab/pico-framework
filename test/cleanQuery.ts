@@ -1,3 +1,7 @@
+/**
+ * PicoQuery normalization via cleanQuery.
+ */
+
 import test from "ava";
 import { cleanQuery } from "../src/PicoQuery";
 

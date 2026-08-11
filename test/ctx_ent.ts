@@ -1,3 +1,7 @@
+/**
+ * Ruleset ctx API: entity get/put/delete.
+ */
+
 import test from "ava";
 import { mkCtxTestEnv } from "./helpers/mkCtxTestEnv";
 

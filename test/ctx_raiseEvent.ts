@@ -1,3 +1,7 @@
+/**
+ * Ruleset raiseEvent: delivery, cleanEvent, and forRid routing.
+ */
+
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";

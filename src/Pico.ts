@@ -1,5 +1,10 @@
 import * as _ from "lodash";
-import { Channel, ChannelConfig, ChannelReadOnly } from "./Channel";
+import {
+  Channel,
+  ChannelConfig,
+  ChannelReadOnly,
+  validateCustomChannelId,
+} from "./Channel";
 import { dbRange } from "./dbRange";
 import { cleanEvent, PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
@@ -310,16 +315,38 @@ export class Pico {
     familyChannelPicoID?: string,
   ): Promise<Channel> {
     const chann = this.newChannelBase(conf, familyChannelPicoID);
+    if (this.channels[chann.id]) {
+      throw new Error(`Channel id already in use: ${chann.id}`);
+    }
     await this.pf.db.batch([chann.toDbPut()]);
     this.channels[chann.id] = chann;
     return chann;
+  }
+
+  private resolveNewChannelId(
+    conf?: ChannelConfig,
+    familyChannelPicoID?: string,
+  ): string {
+    if (familyChannelPicoID) {
+      return this.pf.genID();
+    }
+    const requestedId = conf?.id;
+    if (requestedId == null || requestedId === "") {
+      return this.pf.genID();
+    }
+    const id = validateCustomChannelId(requestedId);
+    if (this.pf.eciIsTaken(id)) {
+      throw new Error(`Channel id already in use: ${id}`);
+    }
+    return id;
   }
 
   private newChannelBase(
     conf?: ChannelConfig,
     familyChannelPicoID?: string,
   ): Channel {
-    const chann = new Channel(this, this.pf.genID(), conf, familyChannelPicoID);
+    const id = this.resolveNewChannelId(conf, familyChannelPicoID);
+    const chann = new Channel(this, id, conf, familyChannelPicoID);
     return chann;
   }
 

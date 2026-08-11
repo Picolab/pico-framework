@@ -1,11 +1,16 @@
 import {
+  allowsEventPolicy,
+  allowsQueryPolicy,
   ChannelConfig,
   ChannelReadOnly,
   cleanChannelTags,
+  CUSTOM_CHANNEL_ID_MIN_LENGTH,
+  CUSTOM_CHANNEL_ID_PATTERN,
   EventPolicy,
   EventPolicyRule,
   QueryPolicy,
   QueryPolicyRule,
+  validateCustomChannelId,
 } from "./Channel";
 import { NewPicoConfig, NewPicoRuleset, Pico, PicoReadOnly } from "./Pico";
 import { PicoEvent } from "./PicoEvent";
@@ -43,4 +48,9 @@ export {
   QueryPolicy,
   QueryPolicyRule,
   cleanChannelTags,
+  allowsEventPolicy,
+  allowsQueryPolicy,
+  CUSTOM_CHANNEL_ID_MIN_LENGTH,
+  CUSTOM_CHANNEL_ID_PATTERN,
+  validateCustomChannelId,
 };

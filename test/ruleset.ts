@@ -1,3 +1,7 @@
+/**
+ * Ruleset eid/qid generation and response handling.
+ */
+
 import test from "ava";
 import { PicoFramework } from "../src";
 import { rulesetRegistry } from "./helpers/rulesetRegistry";

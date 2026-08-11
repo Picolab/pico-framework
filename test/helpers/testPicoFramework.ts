@@ -1,3 +1,7 @@
+/**
+ * Boot a PicoFramework with in-memory db and optional root rulesets.
+ */
+
 import { PicoFramework } from "../../src";
 import { Ruleset } from "../../src/Ruleset";
 import { rulesetRegistry } from "./rulesetRegistry";

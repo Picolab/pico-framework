@@ -31,6 +31,10 @@ Be sure to run the tests before checking in changes.
 npm test
 ```
 
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md). **0.8.1** adds optional custom channel id at creation and `PicoFramework.eciIsTaken()`.
+
 ## License
 
 MIT

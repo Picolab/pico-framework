@@ -1,3 +1,7 @@
+/**
+ * PicoFrameworkEvent scheduling and delivery.
+ */
+
 import test from "ava";
 import { PicoFramework } from "../src";
 import { PicoFrameworkEvent } from "../src/PicoFrameworkEvent";

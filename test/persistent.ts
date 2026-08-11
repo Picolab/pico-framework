@@ -1,3 +1,7 @@
+/**
+ * Pico persistence: save and reload across engine restart.
+ */
+
 import test from "ava";
 import { PicoFramework } from "../src";
 import { dbRange } from "../src/dbRange";
