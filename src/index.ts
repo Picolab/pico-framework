@@ -13,6 +13,16 @@ import {
   validateCustomChannelId,
 } from "./Channel";
 import { NewPicoConfig, NewPicoRuleset, Pico, PicoReadOnly } from "./Pico";
+import {
+  assertChannelPolicyWithinCeiling,
+  eventPolicySubsetOf,
+  hasUnrestrictedEventAllow,
+  hasUnrestrictedQueryAllow,
+  PERMISSIVE_POLICY_CEILING,
+  PolicyCeiling,
+  policyCeilingSubsetOf,
+  queryPolicySubsetOf,
+} from "./policyCeiling";
 import { PicoEvent } from "./PicoEvent";
 import {
   PicoFramework,
@@ -53,4 +63,12 @@ export {
   CUSTOM_CHANNEL_ID_MIN_LENGTH,
   CUSTOM_CHANNEL_ID_PATTERN,
   validateCustomChannelId,
+  PolicyCeiling,
+  PERMISSIVE_POLICY_CEILING,
+  eventPolicySubsetOf,
+  queryPolicySubsetOf,
+  policyCeilingSubsetOf,
+  assertChannelPolicyWithinCeiling,
+  hasUnrestrictedEventAllow,
+  hasUnrestrictedQueryAllow,
 };

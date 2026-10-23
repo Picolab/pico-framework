@@ -3,6 +3,12 @@ import { LevelBatch, PicoDb } from "./utils";
 import { Channel } from "./Channel";
 import { dbRange } from "./dbRange";
 import { NewPicoConfig, Pico } from "./Pico";
+import {
+  PERMISSIVE_POLICY_CEILING,
+  PolicyCeiling,
+  normalizePolicyCeiling,
+} from "./policyCeiling";
+import { assertEventPolicy, assertQueryPolicy, EventPolicyRule, QueryPolicyRule } from "./Channel";
 import { cleanEvent, PicoEvent } from "./PicoEvent";
 import { PicoFrameworkEvent } from "./PicoFrameworkEvent";
 import { cleanQuery, PicoQuery } from "./PicoQuery";
@@ -56,10 +62,26 @@ export interface PicoFrameworkConf {
    * are unaffected either way.
    */
   autoCreateRootPico?: boolean;
+
+  /**
+   * Default policy ceiling for root picos that do not set one explicitly.
+   * Defaults to permissive (*.*) for backward compatibility.
+   */
+  defaultRootPolicyCeiling?: PolicyCeiling;
+
+  /** Deny rules applied on every channel event after per-channel policy passes. */
+  globalEventDeny?: EventPolicyRule[];
+
+  /** Deny rules applied on every channel query after per-channel policy passes. */
+  globalQueryDeny?: QueryPolicyRule[];
 }
 
 export class PicoFramework {
   db: PicoDb;
+
+  private defaultRootPolicyCeiling: PolicyCeiling;
+  private globalEventDeny: EventPolicyRule[];
+  private globalQueryDeny: QueryPolicyRule[];
 
   private rootPico_?: Pico;
   /**
@@ -110,8 +132,37 @@ export class PicoFramework {
     this.onFrameworkEvent = conf && conf.onFrameworkEvent;
     this.useEventInputTime = !!(conf && conf.useEventInputTime);
     this.autoCreateRootPico = !(conf && conf.autoCreateRootPico === false);
+    this.defaultRootPolicyCeiling = conf.defaultRootPolicyCeiling
+      ? normalizePolicyCeiling(conf.defaultRootPolicyCeiling)
+      : PERMISSIVE_POLICY_CEILING;
+    this.globalEventDeny = conf.globalEventDeny ? conf.globalEventDeny.slice(0) : [];
+    this.globalQueryDeny = conf.globalQueryDeny ? conf.globalQueryDeny.slice(0) : [];
 
     this.startupP = this.startup();
+  }
+
+  getDefaultRootPolicyCeiling(): PolicyCeiling {
+    return this.defaultRootPolicyCeiling;
+  }
+
+  private assertGlobalEventDeny(event: PicoEvent): void {
+    if (this.globalEventDeny.length === 0) {
+      return;
+    }
+    assertEventPolicy(
+      { allow: [{ domain: "*", name: "*" }], deny: this.globalEventDeny },
+      event,
+    );
+  }
+
+  private assertGlobalQueryDeny(query: PicoQuery): void {
+    if (this.globalQueryDeny.length === 0) {
+      return;
+    }
+    assertQueryPolicy(
+      { allow: [{ rid: "*", name: "*"}], deny: this.globalQueryDeny },
+      query,
+    );
   }
 
   private async startup() {
@@ -215,6 +266,11 @@ export class PicoFramework {
    */
   async createRootPico(conf?: NewPicoConfig): Promise<Pico> {
     const pico = new Pico(this, this.genID());
+    if (conf?.policyCeiling) {
+      pico.policyCeiling = normalizePolicyCeiling(conf.policyCeiling);
+    } else {
+      pico.policyCeiling = normalizePolicyCeiling(this.defaultRootPolicyCeiling);
+    }
 
     const isFirstPrimary = !this.rootPico_;
     const dbOps: LevelBatch[] = [pico.toDbPut()];
@@ -265,6 +321,7 @@ export class PicoFramework {
 
     const channel = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
+    this.assertGlobalEventDeny(event);
 
     return channel.pico.event(event);
   }
@@ -283,6 +340,7 @@ export class PicoFramework {
 
     const channel = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
+    this.assertGlobalEventDeny(event);
 
     return channel.pico.eventWait(event);
   }
@@ -307,7 +365,9 @@ export class PicoFramework {
 
     const channel = this.lookupChannel(event.eci);
     channel.assertEventPolicy(event, fromPicoId);
+    this.assertGlobalEventDeny(event);
     channel.assertQueryPolicy(query, fromPicoId);
+    this.assertGlobalQueryDeny(query);
 
     return channel.pico.eventQuery(event, query);
   }
@@ -316,6 +376,7 @@ export class PicoFramework {
     query = cleanQuery(query);
     const channel = this.lookupChannel(query.eci);
     channel.assertQueryPolicy(query, fromPicoId);
+    this.assertGlobalQueryDeny(query);
     return channel.pico.query(query);
   }
 

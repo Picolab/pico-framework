@@ -5,6 +5,12 @@ import {
   ChannelReadOnly,
   validateCustomChannelId,
 } from "./Channel";
+import {
+  assertChannelPolicyWithinCeiling,
+  assertPolicyCeilingWithin,
+  normalizePolicyCeiling,
+  PolicyCeiling,
+} from "./policyCeiling";
 import { dbRange } from "./dbRange";
 import { cleanEvent, PicoEvent, PicoEventPayload } from "./PicoEvent";
 import { PicoFramework } from "./PicoFramework";
@@ -56,6 +62,8 @@ export interface NewPicoRuleset {
 
 export interface NewPicoConfig {
   rulesets?: NewPicoRuleset[];
+  /** Optional ceiling for the new pico; must not exceed the parent's ceiling. */
+  policyCeiling?: PolicyCeiling;
 }
 
 export class Pico {
@@ -72,6 +80,12 @@ export class Pico {
   children: string[] = [];
 
   channels: { [eci: string]: Channel } = {};
+
+  /**
+   * Maximum event/query policy any non-family channel on this pico may grant.
+   * When unset, {@link Pico.getEffectivePolicyCeiling} uses the framework default.
+   */
+  policyCeiling?: PolicyCeiling;
 
   rulesets: {
     [rid: string]: {
@@ -156,8 +170,66 @@ export class Pico {
     return this.queue.waitFor(txnId);
   }
 
+  getEffectivePolicyCeiling(): PolicyCeiling {
+    if (this.policyCeiling) {
+      return this.policyCeiling;
+    }
+    if (this.parent == null) {
+      return this.pf.getDefaultRootPolicyCeiling();
+    }
+    const { pico: parentPico } = this.pf.lookupChannel(this.parent);
+    return parentPico.getEffectivePolicyCeiling();
+  }
+
+  private resolveChildPolicyCeiling(conf?: NewPicoConfig): PolicyCeiling {
+    const parentCeiling = this.getEffectivePolicyCeiling();
+    if (conf?.policyCeiling) {
+      const normalized = normalizePolicyCeiling(conf.policyCeiling);
+      assertPolicyCeilingWithin(normalized, parentCeiling);
+      return normalized;
+    }
+    return normalizePolicyCeiling(parentCeiling);
+  }
+
+  private channelTagsCeilingExempt(tags: string[]): boolean {
+    const lower = tags.map((t) => t.toLowerCase());
+    if (lower.includes("system")) {
+      return true;
+    }
+    if (lower.includes("didcomm") || lower.includes("ingress")) {
+      return true;
+    }
+    if (lower.includes("engine") && lower.includes("ui")) {
+      return true;
+    }
+    if (lower.includes("discovery")) {
+      return true;
+    }
+    return false;
+  }
+
+  private assertChannelWithinCeiling(
+    channel: Channel,
+    conf?: ChannelConfig,
+  ): void {
+    if (channel.familyChannelPicoID) {
+      return;
+    }
+    const tags = conf?.tags ?? channel.tags;
+    if (this.channelTagsCeilingExempt(tags)) {
+      return;
+    }
+    const ceiling = this.getEffectivePolicyCeiling();
+    assertChannelPolicyWithinCeiling(
+      channel.eventPolicy,
+      channel.queryPolicy,
+      ceiling,
+    );
+  }
+
   async newPico(conf?: NewPicoConfig) {
     const child = new Pico(this.pf, this.pf.genID());
+    child.policyCeiling = this.resolveChildPolicyCeiling(conf);
     const parentChannel = this.newChannelBase(
       { tags: ["system", "parent"] },
       child.id,
@@ -288,14 +360,18 @@ export class Pico {
   }
 
   toDbPut(): LevelBatch {
+    const value: Record<string, unknown> = {
+      id: this.id,
+      parent: this.parent,
+      children: this.children.slice(0),
+    };
+    if (this.policyCeiling) {
+      value.policyCeiling = this.policyCeiling;
+    }
     return {
       type: "put",
       key: ["pico", this.id],
-      value: {
-        id: this.id,
-        parent: this.parent,
-        children: this.children.slice(0),
-      },
+      value,
     };
   }
 
@@ -307,6 +383,9 @@ export class Pico {
     const pico = new Pico(pf, val.id);
     pico.parent = val.parent;
     pico.children = val.children;
+    if (val.policyCeiling) {
+      pico.policyCeiling = normalizePolicyCeiling(val.policyCeiling);
+    }
     return pico;
   }
 
@@ -315,6 +394,7 @@ export class Pico {
     familyChannelPicoID?: string,
   ): Promise<Channel> {
     const chann = this.newChannelBase(conf, familyChannelPicoID);
+    this.assertChannelWithinCeiling(chann, conf);
     if (this.channels[chann.id]) {
       throw new Error(`Channel id already in use: ${chann.id}`);
     }
@@ -359,6 +439,7 @@ export class Pico {
       throw new Error("Cannot edit the self channel.");
     }
     chann.update(conf);
+    this.assertChannelWithinCeiling(chann, conf);
     await this.pf.db.batch([chann.toDbPut()]);
     return chann;
   }
