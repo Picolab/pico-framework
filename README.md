@@ -1,5 +1,7 @@
 # pico-framework
 
+**Moved on November 16, 2026.** This package now lives in the [pico-engine](https://github.com/Picolab/pico-engine) monorepo at [`packages/pico-framework`](https://github.com/Picolab/pico-engine/tree/master/packages/pico-framework).
+
 [![Build Status](https://github.com/Picolab/pico-framework/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/Picolab/pico-framework/actions/workflows/test.yml)
 
 A framework for building actor-based, people-centric systems. (pico = PersIstent Compute Objects)
